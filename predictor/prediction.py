@@ -8,8 +8,8 @@ from pathlib import Path
 import numpy as np
 from tensorflow import keras
 import uuid
-from ..georeferencing import georeference
-from ..utils import remove_files
+from .georeferencing import georeference
+from .utils import remove_files
 from .utils import open_images, save_mask
 
 BATCH_SIZE = 8
