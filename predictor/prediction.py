@@ -8,7 +8,7 @@ from pathlib import Path
 import numpy as np
 from tensorflow import keras
 import uuid
-from .georeferencing import georeference
+from .georeferencer import georeference
 from .utils import remove_files
 from .utils import open_images, save_mask
 
