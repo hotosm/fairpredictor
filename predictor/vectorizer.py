@@ -35,9 +35,9 @@ def vectorize(input_path: str, output_path: str= None , tolerance: float = 0.5, 
     """
     if output_path is None:
         # Generate a temporary download path using a UUID
-        temp_dir = os.path.join("/tmp", str(uuid.uuid4()),'prediction.geojson')
+        temp_dir = os.path.join("/tmp", str(uuid.uuid4()))
         os.makedirs(temp_dir, exist_ok=True)
-        output_path = temp_dir
+        output_path = os.path.join(temp_dir,'prediction.geojson')
     base_path = Path(output_path).parents[0]
     base_path.mkdir(exist_ok=True, parents=True)
 
