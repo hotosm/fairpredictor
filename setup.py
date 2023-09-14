@@ -7,7 +7,7 @@ with io.open("README.md", encoding="utf-8") as f:
 
 setup(
     name="fairpredictor",
-    version="0.0.5",
+    version="0.0.6",
     url="https://github.com/kshitijrajsharma/fairpredictor",
     author="Kshitij Raj Sharma",
     author_email="skshitizraj@gmail.com",
@@ -29,6 +29,7 @@ setup(
         "numpy",
         "tensorflow==2.9.2",
         "gdal",
+        "rtree",
         "tqdm<=4.62.3",
         "Pillow<=9.0.1",
         "geopandas<=0.10.2",
