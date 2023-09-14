@@ -11,6 +11,8 @@ from shapely.geometry import box
 import math 
 import requests
 import concurrent.futures
+from typing import Tuple
+
 
 
 IMAGE_SIZE = 256
