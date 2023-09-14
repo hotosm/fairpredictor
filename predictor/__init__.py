@@ -1,4 +1,4 @@
-from .prediction import predict
+from .prediction import run_prediction
 from .georeferencer import georeference
 from .vectorizer import vectorize
 from .downloader import download
