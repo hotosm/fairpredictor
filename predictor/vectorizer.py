@@ -31,7 +31,7 @@ def vectorize(
     Args:
         input_path: Path of the directory where the TIF files are stored.
         output_path: Path of the output file.
-        tolerance (float, optional): Tolerance parameter for simplifying polygons. Defaults to 0.5 m.
+        tolerance (float, optional): Tolerance parameter for simplifying polygons. Defaults to 0.5 m. Percentage Tolerance = (Tolerance in Meters / Arc Length in Meters ​)×100
         area_threshold (float, optional): Threshold for filtering polygon areas. Defaults to 5 sqm.
 
     Example::

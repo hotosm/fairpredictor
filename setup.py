@@ -36,5 +36,6 @@ setup(
         "geopandas<=0.10.2",
         "shapely",
         "rasterio",
+        "raster2polygon",
     ],
 )
