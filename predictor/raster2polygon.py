@@ -8,6 +8,7 @@ def polygonizer(
     prediction_path,
     output_path: str = None,
     tolerance: float = 0.01,
+    merging_distance_threshold: float = 0.5,
     area_threshold: float = 5,
 ):
     if output_path is None:
@@ -20,6 +21,7 @@ def polygonizer(
         output_path,
         remove_inputs=False,
         simplify_tolerance=tolerance,
+        merging_distance_threshold=merging_distance_threshold,
         area_threshold=area_threshold,
     )
     return output_path
