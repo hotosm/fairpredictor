@@ -31,5 +31,5 @@ def predict(
     print(f"It took {round(time.time()-start)} sec to extract polygons")
     with open(geojson_path, "r") as f:
         prediction_geojson_data = json.load(f)
-    # shutil.rmtree('/tmp')
+    shutil.rmtree("/tmp")
     return prediction_geojson_data
