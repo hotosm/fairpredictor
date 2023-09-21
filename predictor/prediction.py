@@ -1,16 +1,16 @@
 # Standard library imports
 import os
 import time
+import uuid
 from glob import glob
 from pathlib import Path
 
 # Third party imports
 import numpy as np
 from tensorflow import keras
-import uuid
+
 from .georeferencer import georeference
-from .utils import remove_files
-from .utils import open_images, save_mask
+from .utils import open_images, remove_files, save_mask
 
 BATCH_SIZE = 8
 IMAGE_SIZE = 256
@@ -18,7 +18,10 @@ os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
 
 
 def run_prediction(
-    checkpoint_path: str, input_path: str, prediction_path: str= None, confidence: float = 0.5
+    checkpoint_path: str,
+    input_path: str,
+    prediction_path: str = None,
+    confidence: float = 0.5,
 ) -> None:
     """Predict building footprints for aerial images given a model checkpoint.
 
@@ -43,7 +46,7 @@ def run_prediction(
     """
     if prediction_path is None:
         # Generate a temporary download path using a UUID
-        temp_dir = os.path.join("/tmp", str(uuid.uuid4()))
+        temp_dir = os.path.join("/tmp", "prediction", str(uuid.uuid4()))
         os.makedirs(temp_dir, exist_ok=True)
         prediction_path = temp_dir
     start = time.time()
