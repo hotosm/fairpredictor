@@ -27,13 +27,14 @@ setup(
     ],
     install_requires=[
         "numpy",
-        "tensorflow==2.9.2",
+        "tensorflow",
         "gdal",
         "rtree",
         "tqdm<=4.62.3",
+        "pandas==1.5.3",
         "Pillow<=9.0.1",
         "geopandas<=0.10.2",
         "shapely",
-        "rasterio"
+        "rasterio",
     ],
 )
