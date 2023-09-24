@@ -53,7 +53,7 @@ def get_start_end_download_coords(bbox_coords, zm_level, tile_size):
 def download_image(url, base_path, source_name):
     response = requests.get(url)
     image = response.content
-
+    url = re.sub(r"\.(png|jpeg)$", "", url)
     url_splitted_list = url.split("/")
     filename = f"{base_path}/{source_name}-{url_splitted_list[-2]}-{url_splitted_list[-1]}-{url_splitted_list[-3]}.png"
 
@@ -96,7 +96,6 @@ def download_imagery(start: list, end: list, zm_level, base_path, source="maxar"
         end (list): [tile_x,tile_y],
         source (string): it should be eithre url string or maxar value
         zm_level : Zoom level
-
     """
 
     begin_x = start[0]  # this will be the beginning of the download loop for x
@@ -122,12 +121,22 @@ def download_imagery(start: list, end: list, zm_level, base_path, source="maxar"
                 source_name = source
                 download_url = f"https://services.digitalglobe.com/earthservice/tmsaccess/tms/1.0.0/DigitalGlobe:ImageryTileService@EPSG:3857@jpg/{zm_level}/{download_path[0]}/{download_path[1]}.jpg?connectId={connect_id}&flipy=true"
 
-            # add multiple logic on supported sources here
             else:
                 # source should be url as string , like this :  https://tiles.openaerialmap.org/62dbd947d8499800053796ec/0/62dbd947d8499800053796ed/{z}/{x}/{y}
-                download_url = source.format(
-                    x=download_path[0], y=download_path[1], z=zm_level
+                if "{-y}" in source:
+                    ## negative TMS
+                    source_value = source.replace("{-y}", "{y}")
+                    # conversion from normal tms
+                    y_value = int((2**zm_level) - download_path[1] - 1)
+
+                else:
+                    # If it doesn't, use the positive y-coordinate
+                    y_value = download_path[1]
+                    source_value = source
+                download_url = source_value.format(
+                    x=download_path[0], y=y_value, z=zm_level
                 )
+
             download_urls.append(download_url)
 
             start_y = start_y - 1  # decrease the y
@@ -138,7 +147,6 @@ def download_imagery(start: list, end: list, zm_level, base_path, source="maxar"
     with concurrent.futures.ThreadPoolExecutor() as executor:
         for url in download_urls:
             executor.submit(download_image, url, base_path, source_name)
-
 
 def get_bounding_box(filename: str) -> Tuple[float, float, float, float]:
     """Get the EPSG:3857 coordinates of bounding box for the OAM image.
