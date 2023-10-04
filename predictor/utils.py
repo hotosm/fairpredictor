@@ -52,10 +52,14 @@ def get_start_end_download_coords(bbox_coords, zm_level, tile_size):
 
 def download_image(url, base_path, source_name):
     response = requests.get(url)
+
     image = response.content
-    url = re.sub(r"\.(png|jpeg)$", "", url)
-    url_splitted_list = url.split("/")
-    filename = f"{base_path}/{source_name}-{url_splitted_list[-2]}-{url_splitted_list[-1]}-{url_splitted_list[-3]}.png"
+
+    pattern = r"/(\d+)/(\d+)/(\d+)(?:\.\w+)?"
+    match = re.search(pattern, url)
+    # filename = z-x-y
+    filename = f"{base_path}/{source_name}-{match.group(2)}-{match.group(3)}-{match.group(1)}.png"
+
 
     with open(filename, "wb") as f:
         f.write(image)
