@@ -24,7 +24,7 @@ with io.open("README.md", encoding="utf-8") as f:
 
 setup(
     name="fairpredictor",
-    version="0.0.17",
+    version="0.0.18",
     url="https://github.com/kshitijrajsharma/fairpredictor",
     author="Kshitij Raj Sharma",
     author_email="skshitizraj@gmail.com",
@@ -43,9 +43,6 @@ setup(
         "Programming Language :: Python :: 3.9",
     ],
     install_requires=[
-        "numpy",
-        # "tensorflow<=2.9.2",
-        "gdal",
         "rtree",
         "tqdm<=4.62.3",
         "pandas==1.5.3",
