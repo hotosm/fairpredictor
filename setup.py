@@ -1,13 +1,30 @@
+import importlib.util
 import io
 
 from setuptools import find_packages, setup
+
+# Check if GDAL is installed
+try:
+    importlib.util.find_spec("osgeo")
+except ImportError:
+    raise ImportError(
+        "GDAL is not installed. Please install GDAL before installing this package."
+    )
+
+# Check if TensorFlow is installed
+try:
+    importlib.util.find_spec("tensorflow")
+except ImportError:
+    raise ImportError(
+        "TensorFlow is not installed. Please install TensorFlow before installing this package."
+    )
 
 with io.open("README.md", encoding="utf-8") as f:
     readme = f.read()
 
 setup(
     name="fairpredictor",
-    version="0.0.16",
+    version="0.0.17",
     url="https://github.com/kshitijrajsharma/fairpredictor",
     author="Kshitij Raj Sharma",
     author_email="skshitizraj@gmail.com",
