@@ -81,10 +81,10 @@ def run_prediction(
     keras.backend.clear_session()
     del model
     start = time.time()
-
-    georeference(prediction_path, prediction_path, is_mask=True)
+    georeference_path = os.path.join(prediction_path, "georeference")
+    georeference(prediction_path, georeference_path, is_mask=True)
     print(f"It took {round(time.time()-start)} sec to georeference")
 
     remove_files(f"{prediction_path}/*.xml")
     remove_files(f"{prediction_path}/*.png")
-    return prediction_path
+    return georeference_path
