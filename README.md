@@ -2,7 +2,11 @@
 
 Run your fAIr Model Predictions anywhere ! 
 
-Example on Collab 
+## Prerequisites
+
+- Install ```tensorflow-cpu```
+
+## Example on Collab 
 ```python
 # Install 
 !pip install fairpredictor
@@ -30,3 +34,10 @@ plt.show()
 ```
 
 Works on CPU ! Can work on serverless functions, No other dependencies to run predictions 
+
+## Use raster2polygon 
+
+There is another postprocessing option that supports distance threshold between polygon for merging them , If it is useful for you install raster2polygon by : 
+```
+pip install raster2polygon
+```

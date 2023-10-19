@@ -22,6 +22,7 @@ def run_prediction(
     input_path: str,
     prediction_path: str = None,
     confidence: float = 0.5,
+    tile_overlap_distance: float = 0.15,
 ) -> None:
     """Predict building footprints for aerial images given a model checkpoint.
 
@@ -35,6 +36,7 @@ def run_prediction(
         input_path: Path of the directory where the images are stored.
         prediction_path: Path of the directory where the predicted images will go.
         confidence: Threshold probability for filtering out low-confidence predictions.
+        tile_overlap_distance : Provides tile overlap distance to remove the strip between predictions.
 
     Example::
 
@@ -82,7 +84,12 @@ def run_prediction(
     del model
     start = time.time()
     georeference_path = os.path.join(prediction_path, "georeference")
-    georeference(prediction_path, georeference_path, is_mask=True)
+    georeference(
+        prediction_path,
+        georeference_path,
+        is_mask=True,
+        tile_overlap_distance=tile_overlap_distance,
+    )
     print(f"It took {round(time.time()-start)} sec to georeference")
 
     remove_files(f"{prediction_path}/*.xml")

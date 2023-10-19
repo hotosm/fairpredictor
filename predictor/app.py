@@ -1,3 +1,4 @@
+import importlib.util
 import json
 import os
 import shutil
@@ -11,7 +12,13 @@ from .vectorizer import vectorize
 
 
 def predict(
-    bbox, model_path, zoom_level, tms_url, tile_size=256, use_raster2polygon=False
+    bbox,
+    model_path,
+    zoom_level,
+    tms_url,
+    tile_size=256,
+    use_raster2polygon=False,
+    remove_metadata=True,
 ):
     """
     Parameters:
@@ -49,6 +56,13 @@ def predict(
     geojson_path = os.path.join(geojson_path, "prediction.geojson")
 
     if use_raster2polygon:
+        try:
+            importlib.util.find_spec("raster2polygon")
+        except ImportError:
+            raise ImportError(
+                "Raster2polygon is not installed. Install using pip install raster2polygon"
+            )
+
         geojson_path = polygonizer(prediction_path, output_path=geojson_path)
     else:
         geojson_path = vectorize(
@@ -58,5 +72,6 @@ def predict(
     print(f"It took {round(time.time()-start)} sec to extract polygons")
     with open(geojson_path, "r") as f:
         prediction_geojson_data = json.load(f)
-    shutil.rmtree(base_path)
+    if remove_metadata:
+        shutil.rmtree(base_path)
     return prediction_geojson_data

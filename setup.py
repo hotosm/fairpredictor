@@ -1,23 +1,6 @@
-import importlib.util
 import io
 
 from setuptools import find_packages, setup
-
-# Check if GDAL is installed
-try:
-    importlib.util.find_spec("osgeo")
-except ImportError:
-    raise ImportError(
-        "GDAL is not installed. Please install GDAL before installing this package."
-    )
-
-# Check if TensorFlow is installed
-try:
-    importlib.util.find_spec("tensorflow")
-except ImportError:
-    raise ImportError(
-        "TensorFlow is not installed. Please install TensorFlow before installing this package."
-    )
 
 with io.open("README.md", encoding="utf-8") as f:
     readme = f.read()
@@ -43,13 +26,11 @@ setup(
         "Programming Language :: Python :: 3.9",
     ],
     install_requires=[
-        "rtree",
-        "tqdm<=4.62.3",
-        "pandas==1.5.3",
-        "Pillow<=9.0.1",
-        "geopandas<=0.10.2",
-        "shapely",
-        "rasterio",
-        "raster2polygon",
+        "rtree>=1.0.0,<=1.1.0",
+        "tqdm>=4.0.0,<=4.62.3",
+        "geopandas>=0.14.0,<=0.14.5",
+        "shapely>=1.0.0,<=2.0.2",
+        "rasterio>=1.0.0,<=1.3.8",
+        # "raster2polygon",
     ],
 )
