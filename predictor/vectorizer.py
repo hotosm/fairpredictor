@@ -8,6 +8,7 @@ from pathlib import Path
 import geopandas as gpd
 import numpy as np
 import rasterio as rio
+from rasterio.enums import Resampling
 from rasterio.features import shapes
 from rasterio.merge import merge
 from shapely.geometry import Polygon, shape
@@ -51,7 +52,10 @@ def vectorize(
         kwargs = src.meta.copy()
 
     rasters = [rio.open(path) for path in raster_paths]
-    mosaic, output = merge(rasters)
+    mosaic, output = merge(
+        rasters,
+        resampling=Resampling.nearest,
+    )
 
     # Close raster files after merging
     for raster in rasters:

@@ -4,7 +4,6 @@ Run your fAIr Model Predictions anywhere !
 
 ## Prerequisites
 
-- Install ```gdal``` for your machine 
 - Install ```tensorflow-cpu```
 
 ## Example on Collab 

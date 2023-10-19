@@ -34,3 +34,6 @@ pipenv.lock
 # virtualenv
 env
 venv
+
+#predictions
+prediction/*
