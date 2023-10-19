@@ -26,6 +26,8 @@ setup(
         "Programming Language :: Python :: 3.9",
     ],
     install_requires=[
+        "requests",
+        "Pillow",
         "rtree>=1.0.0,<=1.1.0",
         "tqdm>=4.0.0,<=4.62.3",
         "geopandas>=0.14.0,<=0.14.5",

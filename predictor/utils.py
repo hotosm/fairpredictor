@@ -1,25 +1,25 @@
-from typing import List
-
-import numpy as np
-from PIL import Image
-from tensorflow import keras
-from glob import glob
-import os
-import geopandas
-import re
-from shapely.geometry import box
-import math 
-import requests
 import concurrent.futures
-from typing import Tuple
+import math
+import os
+import re
+from glob import glob
+from typing import List, Tuple
 
+import geopandas
+import numpy as np
+import requests
+from PIL import Image
+from shapely.geometry import box
 
+try:
+    from tensorflow import keras
+except Exception as ex:
+    print("Unable to import tensorflow")
 
 IMAGE_SIZE = 256
 
 
 def get_start_end_download_coords(bbox_coords, zm_level, tile_size):
-
     # start point where we will start downloading the tiles
 
     start_point_lng = bbox_coords[0]  # getting the starting lat lng
@@ -60,9 +60,9 @@ def download_image(url, base_path, source_name):
     # filename = z-x-y
     filename = f"{base_path}/{source_name}-{match.group(2)}-{match.group(3)}-{match.group(1)}.png"
 
-
     with open(filename, "wb") as f:
         f.write(image)
+
 
 def convert2worldcd(lat, lng, tile_size):
     """
@@ -80,6 +80,7 @@ def convert2worldcd(lat, lng, tile_size):
     # print("world coordinate space is %s, %s",world_x,world_y)
     return world_x, world_y
 
+
 def latlng2tile(zoom, lat, lng, tile_size):
     """By dividing the pixel coordinates by the tile size and taking the
     integer parts of the result, you produce as a by-product the tile
@@ -91,6 +92,7 @@ def latlng2tile(zoom, lat, lng, tile_size):
     t_x = math.floor((w_x * zoom_byte) / tile_size)
     t_y = math.floor((w_y * zoom_byte) / tile_size)
     return t_x, t_y
+
 
 def download_imagery(start: list, end: list, zm_level, base_path, source="maxar"):
     """Downloads imagery from start to end tile coordinate system
@@ -152,6 +154,7 @@ def download_imagery(start: list, end: list, zm_level, base_path, source="maxar"
         for url in download_urls:
             executor.submit(download_image, url, base_path, source_name)
 
+
 def get_bounding_box(filename: str) -> Tuple[float, float, float, float]:
     """Get the EPSG:3857 coordinates of bounding box for the OAM image.
 
@@ -162,7 +165,7 @@ def get_bounding_box(filename: str) -> Tuple[float, float, float, float]:
     Returns:
         A tuple, (x_min, y_min, x_max, y_max), with coordinates in meters.
     """
-    filename = re.sub(r'\.(png|jpeg)$', '', filename)
+    filename = re.sub(r"\.(png|jpeg)$", "", filename)
     _, *tile_info = re.split("-", filename)
     x_tile, y_tile, zoom = map(int, tile_info)
 
@@ -205,7 +208,7 @@ def num2deg(x_tile: int, y_tile: int, zoom: int) -> Tuple[float, float]:
     return lon_deg, lat_deg
 
 
-def open_images(paths: List[str]) -> np.ndarray:
+def open_images_keras(paths: List[str]) -> np.ndarray:
     """Open images from some given paths."""
     images = []
     for path in paths:
@@ -217,11 +220,26 @@ def open_images(paths: List[str]) -> np.ndarray:
 
     return np.array(images)
 
+
+def open_images_pillow(paths: List[str]) -> np.ndarray:
+    """Open images from given paths using Pillow and resize them."""
+    images = []
+    for path in paths:
+        img = Image.open(path)
+        img = img.resize((IMAGE_SIZE, IMAGE_SIZE)).convert("RGB")
+        img_array = np.array(img, dtype=np.float32)
+        img_array = img_array.reshape(IMAGE_SIZE, IMAGE_SIZE, 3) / 255.0
+        images.append(img_array)
+
+    return np.array(images)
+
+
 def remove_files(pattern: str) -> None:
     """Remove files matching a wildcard."""
     files = glob(pattern)
     for file in files:
         os.remove(file)
+
 
 def save_mask(mask: np.ndarray, filename: str) -> None:
     """Save the mask array to the specified location."""

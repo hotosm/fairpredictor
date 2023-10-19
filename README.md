@@ -4,7 +4,12 @@ Run your fAIr Model Predictions anywhere !
 
 ## Prerequisites
 
-- Install ```tensorflow-cpu```
+fAIr Predictor has support for GPU , CPU and tflite based devices 
+
+- Install ```tensorflow-cpu``` or ```tflite-runtime``` according to your requirements 
+
+```tflite-runtime``` support is for having very light deployment in order to run inference & 
+```tensorflow-cpu``` might require installation of ```efficientnet```
 
 ## Example on Collab 
 ```python
