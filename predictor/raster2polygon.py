@@ -1,7 +1,16 @@
+import importlib.util
 import os
 import uuid
 
-from raster2polygon import polygonize
+try:
+    importlib.util.find_spec("raster2polygon")
+    from raster2polygon import polygonize
+except ImportError:
+    print(
+        ImportError(
+            "Raster2polygon is not installed. This option won't be available in postprocessing"
+        )
+    )
 
 
 def polygonizer(

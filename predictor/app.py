@@ -7,6 +7,7 @@ import uuid
 
 from .downloader import download
 from .prediction import run_prediction
+from .raster2polygon import polygonizer
 from .vectorizer import vectorize
 
 
@@ -55,7 +56,6 @@ def predict(
             raise ImportError(
                 "Raster2polygon is not installed. Install using pip install raster2polygon"
             )
-        from .raster2polygon import polygonizer
 
         geojson_path = polygonizer(prediction_path, output_path=geojson_path)
     else:

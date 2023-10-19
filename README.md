@@ -2,7 +2,12 @@
 
 Run your fAIr Model Predictions anywhere ! 
 
-Example on Collab 
+## Prerequisites
+
+- Install ```gdal``` for your machine 
+- Install ```tensorflow-cpu```
+
+## Example on Collab 
 ```python
 # Install 
 !pip install fairpredictor
