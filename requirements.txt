@@ -1,6 +1,6 @@
-numpy
-tensorflow<=2.9.2
-gdal
+# numpy
+# tensorflow<=2.9.2
+# gdal
 tqdm<=4.62.3
 Pillow<=9.0.1
 geopandas<=0.10.2

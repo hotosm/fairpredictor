@@ -43,13 +43,13 @@ setup(
         "Programming Language :: Python :: 3.9",
     ],
     install_requires=[
-        "rtree",
+        # "rtree",
         "tqdm<=4.62.3",
-        "pandas==1.5.3",
-        "Pillow<=9.0.1",
+        # "pandas==1.5.3",
+        # "Pillow<=9.0.1",
         "geopandas<=0.10.2",
         "shapely",
         "rasterio",
-        "raster2polygon",
+        # "raster2polygon",
     ],
 )
