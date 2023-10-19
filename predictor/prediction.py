@@ -1,4 +1,5 @@
 # Standard library imports
+import concurrent.futures
 import os
 import time
 import uuid
@@ -7,10 +8,20 @@ from pathlib import Path
 
 # Third party imports
 import numpy as np
-from tensorflow import keras
+
+try:
+    import tensorflow as tf
+    from tensorflow import keras
+except ImportError:
+    try:
+        import tflite_runtime.interpreter as tflite
+    except ImportError:
+        raise ImportError(
+            "Neither TensorFlow nor TFLite is installed. Please install either TensorFlow or TFLite."
+        )
 
 from .georeferencer import georeference
-from .utils import open_images, remove_files, save_mask
+from .utils import open_images_keras, open_images_pillow, remove_files, save_mask
 
 BATCH_SIZE = 8
 IMAGE_SIZE = 256
@@ -53,35 +64,95 @@ def run_prediction(
         prediction_path = temp_dir
     start = time.time()
     print(f"Using : {checkpoint_path}")
-    model = keras.models.load_model(checkpoint_path)
+    if checkpoint_path.endswith(".tflite"):
+        interpreter = tflite.Interpreter(model_path=checkpoint_path)
+        interpreter.resize_tensor_input(
+            interpreter.get_input_details()[0]["index"], (BATCH_SIZE, 256, 256, 3)
+        )
+        interpreter.allocate_tensors()
+        input_tensor_index = interpreter.get_input_details()[0]["index"]
+        output = interpreter.tensor(interpreter.get_output_details()[0]["index"])
+    else:
+        model = keras.models.load_model(checkpoint_path)
     print(f"It took {round(time.time()-start)} sec to load model")
     start = time.time()
 
     os.makedirs(prediction_path, exist_ok=True)
     image_paths = glob(f"{input_path}/*.png")
+    if checkpoint_path.endswith(".tflite"):
+        for i in range((len(image_paths) + BATCH_SIZE - 1) // BATCH_SIZE):
+            image_batch = image_paths[BATCH_SIZE * i : BATCH_SIZE * (i + 1)]
+            if len(image_batch) < BATCH_SIZE:
+                interpreter.resize_tensor_input(
+                    interpreter.get_input_details()[0]["index"], (1, 256, 256, 3)
+                )
+                interpreter.allocate_tensors()
+                input_tensor_index = interpreter.get_input_details()[0]["index"]
+                output = interpreter.tensor(
+                    interpreter.get_output_details()[0]["index"]
+                )
+                for path in image_batch:
+                    images = open_images_pillow([path])
+                    images = images.reshape(-1, IMAGE_SIZE, IMAGE_SIZE, 3).astype(
+                        np.float32
+                    )
+                    interpreter.set_tensor(input_tensor_index, images)
+                    interpreter.invoke()
+                    preds = output()
+                    preds = np.argmax(preds, axis=-1)
+                    preds = np.expand_dims(preds, axis=-1)
+                    preds = np.where(
+                        preds > confidence, 1, 0
+                    )  # Filter out low confidence predictions
 
-    for i in range((len(image_paths) + BATCH_SIZE - 1) // BATCH_SIZE):
-        image_batch = image_paths[BATCH_SIZE * i : BATCH_SIZE * (i + 1)]
-        images = open_images(image_batch)
-        images = images.reshape(-1, IMAGE_SIZE, IMAGE_SIZE, 3)
+                    save_mask(
+                        preds[0],
+                        str(f"{prediction_path}/{Path(path).stem}.png"),
+                    )
+            else:
+                images = open_images_pillow(image_batch)
+                images = images.reshape(-1, IMAGE_SIZE, IMAGE_SIZE, 3).astype(
+                    np.float32
+                )
+                interpreter.set_tensor(input_tensor_index, images)
+                interpreter.invoke()
+                preds = output()
+                preds = np.argmax(preds, axis=-1)
+                preds = np.expand_dims(preds, axis=-1)
+                preds = np.where(
+                    preds > confidence, 1, 0
+                )  # Filter out low confidence predictions
 
-        preds = model.predict(images)
-        preds = np.argmax(preds, axis=-1)
-        preds = np.expand_dims(preds, axis=-1)
-        preds = np.where(
-            preds > confidence, 1, 0
-        )  # Filter out low confidence predictions
+                for idx, path in enumerate(image_batch):
+                    save_mask(
+                        preds[idx],
+                        str(f"{prediction_path}/{Path(path).stem}.png"),
+                    )
 
-        for idx, path in enumerate(image_batch):
-            save_mask(
-                preds[idx],
-                str(f"{prediction_path}/{Path(path).stem}.png"),
-            )
+    else:
+        for i in range((len(image_paths) + BATCH_SIZE - 1) // BATCH_SIZE):
+            image_batch = image_paths[BATCH_SIZE * i : BATCH_SIZE * (i + 1)]
+            images = open_images_keras(image_batch)
+            images = images.reshape(-1, IMAGE_SIZE, IMAGE_SIZE, 3)
+            preds = model.predict(images)
+            preds = np.argmax(preds, axis=-1)
+            preds = np.expand_dims(preds, axis=-1)
+            preds = np.where(
+                preds > confidence, 1, 0
+            )  # Filter out low confidence predictions
+
+            for idx, path in enumerate(image_batch):
+                save_mask(
+                    preds[idx],
+                    str(f"{prediction_path}/{Path(path).stem}.png"),
+                )
+
     print(
         f"It took {round(time.time()-start)} sec to predict with {confidence} Confidence Threshold"
     )
-    keras.backend.clear_session()
-    del model
+    if not checkpoint_path.endswith(".tflite"):
+        keras.backend.clear_session()
+        del model
     start = time.time()
     georeference_path = os.path.join(prediction_path, "georeference")
     georeference(
