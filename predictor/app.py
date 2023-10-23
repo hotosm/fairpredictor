@@ -17,6 +17,7 @@ def predict(
     zoom_level,
     tms_url,
     tile_size=256,
+    base_path=None,
     use_raster2polygon=False,
     remove_metadata=True,
 ):
@@ -27,8 +28,13 @@ def predict(
         zoom_level : Zoom level of the tiles to be used for prediction
         tms_url : Your Image URL on which you want to detect feature
         tile_size : Optional >> Tile size to be used in pixel default : 256*256
+        base_path : Optional >> Basepath for your working dir of prediction
     """
-    base_path = os.path.join(os.getcwd(), "prediction", str(uuid.uuid4()))
+    if base_path:
+        base_path = os.path.join(base_path, "prediction", str(uuid.uuid4()))
+    else:
+        base_path = os.path.join(os.getcwd(), "prediction", str(uuid.uuid4()))
+
     os.makedirs(base_path, exist_ok=True)
     download_path = os.path.join(base_path, "image")
     os.makedirs(download_path, exist_ok=True)
