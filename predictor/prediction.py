@@ -82,53 +82,32 @@ def run_prediction(
     if checkpoint_path.endswith(".tflite"):
         for i in range((len(image_paths) + BATCH_SIZE - 1) // BATCH_SIZE):
             image_batch = image_paths[BATCH_SIZE * i : BATCH_SIZE * (i + 1)]
-            if len(image_batch) < BATCH_SIZE:
+            if len(image_batch) != BATCH_SIZE:
                 interpreter.resize_tensor_input(
-                    interpreter.get_input_details()[0]["index"], (1, 256, 256, 3)
+                    interpreter.get_input_details()[0]["index"],
+                    (len(image_batch), 256, 256, 3),
                 )
                 interpreter.allocate_tensors()
                 input_tensor_index = interpreter.get_input_details()[0]["index"]
                 output = interpreter.tensor(
                     interpreter.get_output_details()[0]["index"]
                 )
-                for path in image_batch:
-                    images = open_images_pillow([path])
-                    images = images.reshape(-1, IMAGE_SIZE, IMAGE_SIZE, 3).astype(
-                        np.float32
-                    )
-                    interpreter.set_tensor(input_tensor_index, images)
-                    interpreter.invoke()
-                    preds = output()
-                    preds = np.argmax(preds, axis=-1)
-                    preds = np.expand_dims(preds, axis=-1)
-                    preds = np.where(
-                        preds > confidence, 1, 0
-                    )  # Filter out low confidence predictions
+            images = open_images_pillow(image_batch)
+            images = images.reshape(-1, IMAGE_SIZE, IMAGE_SIZE, 3).astype(np.float32)
+            interpreter.set_tensor(input_tensor_index, images)
+            interpreter.invoke()
+            preds = output()
+            preds = np.argmax(preds, axis=-1)
+            preds = np.expand_dims(preds, axis=-1)
+            preds = np.where(
+                preds > confidence, 1, 0
+            )  # Filter out low confidence predictions
 
-                    save_mask(
-                        preds[0],
-                        str(f"{prediction_path}/{Path(path).stem}.png"),
-                    )
-            else:
-                images = open_images_pillow(image_batch)
-                images = images.reshape(-1, IMAGE_SIZE, IMAGE_SIZE, 3).astype(
-                    np.float32
+            for idx, path in enumerate(image_batch):
+                save_mask(
+                    preds[idx],
+                    str(f"{prediction_path}/{Path(path).stem}.png"),
                 )
-                interpreter.set_tensor(input_tensor_index, images)
-                interpreter.invoke()
-                preds = output()
-                preds = np.argmax(preds, axis=-1)
-                preds = np.expand_dims(preds, axis=-1)
-                preds = np.where(
-                    preds > confidence, 1, 0
-                )  # Filter out low confidence predictions
-
-                for idx, path in enumerate(image_batch):
-                    save_mask(
-                        preds[idx],
-                        str(f"{prediction_path}/{Path(path).stem}.png"),
-                    )
-
     else:
         for i in range((len(image_paths) + BATCH_SIZE - 1) // BATCH_SIZE):
             image_batch = image_paths[BATCH_SIZE * i : BATCH_SIZE * (i + 1)]
