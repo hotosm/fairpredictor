@@ -10,11 +10,12 @@ from pathlib import Path
 import numpy as np
 
 try:
-    import tensorflow as tf
-    from tensorflow import keras
+    import tflite_runtime.interpreter as tflite
+
 except ImportError:
     try:
-        import tflite_runtime.interpreter as tflite
+        import tensorflow as tf
+        from tensorflow import keras
     except ImportError:
         raise ImportError(
             "Neither TensorFlow nor TFLite is installed. Please install either TensorFlow or TFLite."
