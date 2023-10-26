@@ -18,6 +18,10 @@ def predict(
     tms_url,
     tile_size=256,
     base_path=None,
+    confidence=0.5,
+    area_threshold=3,
+    tolerance=0.5,
+    tile_overlap_distance=0.15,
     use_raster2polygon=False,
     remove_metadata=True,
 ):
@@ -29,6 +33,10 @@ def predict(
         tms_url : Your Image URL on which you want to detect feature
         tile_size : Optional >> Tile size to be used in pixel default : 256*256
         base_path : Optional >> Basepath for your working dir of prediction
+        confidence: Optional >> Threshold probability for filtering out low-confidence predictions, Defaults to 0.5
+        area_threshold (float, optional): Threshold for filtering polygon areas. Defaults to 3 sqm.
+        tolerance (float, optional): Tolerance parameter for simplifying polygons. Defaults to 0.5 m. Percentage Tolerance = (Tolerance in Meters / Arc Length in Meters ​)×100
+        tile_overlap_distance : Provides tile overlap distance to remove the strip between predictions, Defaults to 0.15m
     """
     if base_path:
         base_path = os.path.join(base_path, "prediction", str(uuid.uuid4()))
@@ -54,6 +62,8 @@ def predict(
         model_path,
         image_download_path,
         prediction_path=prediction_path,
+        confidence=confidence,
+        tile_overlap_distance=tile_overlap_distance,
     )
     start = time.time()
 
@@ -74,6 +84,8 @@ def predict(
         geojson_path = vectorize(
             prediction_path,
             output_path=geojson_path,
+            area_threshold=area_threshold,
+            tolerance=tolerance,
         )
     print(f"It took {round(time.time()-start)} sec to extract polygons")
     with open(geojson_path, "r") as f:
