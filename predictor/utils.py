@@ -12,12 +12,9 @@ from PIL import Image
 from shapely.geometry import box
 
 try:
-    import tflite_runtime.interpreter as tflite
+    from tensorflow import keras
 except ImportError:
-    try:
-        from tensorflow import keras
-    except ImportError:
-        raise ImportError("Unable to import tensorflow")
+    print("Unable to import tensorflow")
 
 IMAGE_SIZE = 256
 

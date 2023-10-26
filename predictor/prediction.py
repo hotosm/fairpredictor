@@ -74,6 +74,10 @@ def run_prediction(
         input_tensor_index = interpreter.get_input_details()[0]["index"]
         output = interpreter.tensor(interpreter.get_output_details()[0]["index"])
     else:
+        try:
+            from tensorflow import keras
+        except ImportError:
+            raise ImportError("Neither TensorFlow not installed.")
         model = keras.models.load_model(checkpoint_path)
     print(f"It took {round(time.time()-start)} sec to load model")
     start = time.time()
