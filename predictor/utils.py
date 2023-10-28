@@ -14,7 +14,7 @@ from shapely.geometry import box
 try:
     from tensorflow import keras
 except ImportError:
-    print("Unable to import tensorflow")
+    pass
 
 IMAGE_SIZE = 256
 
