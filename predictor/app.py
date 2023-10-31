@@ -22,7 +22,8 @@ def predict(
     area_threshold=3,
     tolerance=0.5,
     tile_overlap_distance=0.15,
-    use_raster2polygon=False,
+    merge_adjancent_polygons=True,
+    # use_raster2polygon=False,
     remove_metadata=True,
 ):
     """
@@ -37,6 +38,7 @@ def predict(
         area_threshold (float, optional): Threshold for filtering polygon areas. Defaults to 3 sqm.
         tolerance (float, optional): Tolerance parameter for simplifying polygons. Defaults to 0.5 m. Percentage Tolerance = (Tolerance in Meters / Arc Length in Meters ​)×100
         tile_overlap_distance : Provides tile overlap distance to remove the strip between predictions, Defaults to 0.15m
+        merge_adjancent_polygons(bool,optional) : Merges adjacent self intersecting or containing each other polygons
     """
     if base_path:
         base_path = os.path.join(base_path, "prediction", str(uuid.uuid4()))
@@ -86,6 +88,7 @@ def predict(
             output_path=geojson_path,
             area_threshold=area_threshold,
             tolerance=tolerance,
+            merge_adjancent_polygons=merge_adjancent_polygons,
         )
     print(f"It took {round(time.time()-start)} sec to extract polygons")
     with open(geojson_path, "r") as f:
