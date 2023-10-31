@@ -7,7 +7,10 @@ from pydantic import BaseModel, Field, FilePath, HttpUrl, validator
 
 from predictor import predict
 
-app = FastAPI()
+app = FastAPI(
+    title="fAIr Prediction API",
+    description="Standalone API for Running .h5,.tf,.tflite Model Predictions",
+)
 
 
 class PredictionRequest(BaseModel):
