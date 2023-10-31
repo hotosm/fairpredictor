@@ -11,7 +11,7 @@ Contains a FastAPI-based API for making predictions using a fAIr model. It provi
 1. Clone Repo and Navigate to /API
 
     ```bash
-    git clone <this-repository-url>
+    git clone https://github.com/kshitijrajsharma/fairpredictor.git
     cd API
     ```
 
