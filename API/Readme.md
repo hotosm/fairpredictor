@@ -29,4 +29,5 @@ Contains a FastAPI-based API for making predictions using a fAIr model. It provi
 
 4. API Documentation
 
-    Go to : ```Localhost:8080/redoc```
+    - Redocly Documentation - > Go to your_API_url/redoc : for eg [localhost:redoc](http://localhost:8080/redoc)
+    - Swagger Documentation - > Go to your_API_url/docs : for eg [localhost:docs](http://localhost:8080/docs#/default/predict_api_predict__post)
