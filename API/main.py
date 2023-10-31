@@ -3,36 +3,17 @@ import tempfile
 
 import requests
 from fastapi import FastAPI
-from pydantic import BaseModel, Field, FilePath, HttpUrl, validator
+from pydantic import BaseModel, Field, PositiveFloat, validator
 
 from predictor import predict
 
 app = FastAPI(
     title="fAIr Prediction API",
-    description="Standalone API for Running .h5,.tf,.tflite Model Predictions",
+    description="Standalone API for Running .h5, .tf, .tflite Model Predictions",
 )
 
 
 class PredictionRequest(BaseModel):
-    """
-    Represents the request body for making predictions.
-
-    Parameters:
-    - `bbox` (list[float]): Bounding box coordinates [min_longitude, min_latitude, max_longitude, max_latitude].
-    - `checkpoint` (str): Path or URL to the machine learning model file.
-    - `zoom` (int): Zoom level for predictions (between 18 and 23).
-    - `tms` (str): URL for tile map service.
-
-    Example:
-    ```
-    {
-        "bbox": [100.56228021333352, 13.685230854641182, 100.56383321235313, 13.685961853747969],
-        "checkpoint": "path/to/model.tflite",
-        "zoom": 20,
-        "tms": "https://tiles.openaerialmap.org/6501a65c0906de000167e64d/0/6501a65c0906de000167e64e/{z}/{x}/{y}"
-    }
-    """
-
     bbox: list[float] = Field(
         ...,
         example=[
@@ -41,14 +22,61 @@ class PredictionRequest(BaseModel):
             100.56383321235313,
             13.685961853747969,
         ],
+        description="Bounding box coordinates [min_longitude, min_latitude, max_longitude, max_latitude].",
     )
     checkpoint: str = Field(
-        ..., example="path/to/model.tflite or https://example.com/model.tflite"
+        ...,
+        example="path/to/model.tflite or https://example.com/model.tflite",
+        description="Path or URL to the machine learning model file.",
     )
-    zoom: int = Field(..., ge=18, le=23, example=20)
+    zoom: int = Field(
+        ...,
+        ge=18,
+        le=23,
+        example=20,
+        description="Zoom level for predictions (between 18 and 23).",
+    )
     tms: str = Field(
         ...,
         example="https://tiles.openaerialmap.org/6501a65c0906de000167e64d/0/6501a65c0906de000167e64e/{z}/{x}/{y}",
+        description="URL for tile map service.",
+    )
+    tile_size: int = Field(
+        256,
+        example=256,
+        description="Tile size in pixels. Defaults to 256*256.",
+    )
+    base_path: str = Field(
+        None,
+        example="/path/to/working/directory",
+        description="Base path for working directory. Defaults to None.",
+    )
+    confidence: float = Field(
+        0.5,
+        example=0.5,
+        gt=0,
+        le=1,
+        description="Threshold probability for filtering out low-confidence predictions. Defaults to 0.5.",
+    )
+    area_threshold: PositiveFloat = Field(
+        3,
+        example=3,
+        description="Threshold for filtering polygon areas. Defaults to 3 sqm.",
+    )
+    tolerance: PositiveFloat = Field(
+        0.5,
+        example=0.5,
+        description="Tolerance parameter for simplifying polygons. Defaults to 0.5 m.",
+    )
+    tile_overlap_distance: PositiveFloat = Field(
+        0.15,
+        example=0.15,
+        description="Tile overlap distance to remove the strip between predictions. Defaults to 0.15 m.",
+    )
+    merge_adjacent_polygons: bool = Field(
+        True,
+        example=True,
+        description="Flag to merge adjacent polygons. Defaults to True.",
     )
 
     @validator("bbox")
@@ -93,7 +121,15 @@ async def predict_api(request: PredictionRequest):
     """
     try:
         predictions = predict(
-            request.bbox, request.checkpoint, request.zoom, request.tms
+            request.bbox,
+            request.checkpoint,
+            request.zoom,
+            request.tms,
+            confidence=request.confidence,
+            area_threshold=request.area_threshold,
+            tolerance=request.tolerance,
+            tile_overlap_distance=request.tile_overlap_distance,
+            merge_adjancent_polygons=request.merge_adjacent_polygons,
         )
         return predictions
     except Exception as e:
