@@ -23,7 +23,7 @@ def predict(
     tolerance=0.5,
     tile_overlap_distance=0.15,
     merge_adjancent_polygons=True,
-    # use_raster2polygon=False,
+    use_raster2polygon=False,
     remove_metadata=True,
 ):
     """

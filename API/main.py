@@ -41,16 +41,6 @@ class PredictionRequest(BaseModel):
         example="https://tiles.openaerialmap.org/6501a65c0906de000167e64d/0/6501a65c0906de000167e64e/{z}/{x}/{y}",
         description="URL for tile map service.",
     )
-    tile_size: int = Field(
-        256,
-        example=256,
-        description="Tile size in pixels. Defaults to 256*256.",
-    )
-    base_path: str = Field(
-        None,
-        example="/path/to/working/directory",
-        description="Base path for working directory. Defaults to None.",
-    )
     confidence: float = Field(
         0.5,
         example=0.5,

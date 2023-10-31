@@ -7,13 +7,11 @@ RUN apt-get update \
     && apt-get --no-install-recommends -y install \
        build-essential libgdal-dev libboost-numpy-dev
 
+COPY requirements.txt requirements.txt
+
 RUN \
    python3 -m pip install --upgrade pip \
-   && python3 -m pip install \
-        fastapi==0.103.2 \
-        uvicorn==0.22.0 \
-        fairpredictor \
-        tflite-runtime==2.14.0
+   && python3 -m pip install -r requirements.txt
 
 RUN pip install fastapi==0.103.2 fairpredictor tflite-runtime==2.14.0
 
