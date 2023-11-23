@@ -80,52 +80,49 @@ class PredictionRequest(BaseModel):
     @validator(
         "max_angle_change",
         "skew_tolerance",
-        "tolerance",
-        "tile_overlap_distance",
-        "area_threshold",
     )
-    def validate_values(self, value):
+    def validate_values(cls, value):
         if value is not None:
             if value < 0 or value > 45:
                 raise ValueError(f"Value should be between 0 and 45: {value}")
         return value
 
     @validator("tolerance")
-    def validate_tolerance(self, value):
+    def validate_tolerance(cls, value):
         if value is not None:
             if value < 0 or value > 10:
                 raise ValueError(f"Value should be between 0 and 10: {value}")
         return value
 
     @validator("tile_overlap_distance")
-    def validate_tile_overlap_distance(self, value):
+    def validate_tile_overlap_distance(cls, value):
         if value is not None:
             if value < 0 or value > 1:
                 raise ValueError(f"Value should be between 0 and 1: {value}")
         return value
 
     @validator("area_threshold")
-    def validate_area_threshold(self, value):
+    def validate_area_threshold(cls, value):
         if value is not None:
             if value < 0 or value > 20:
                 raise ValueError(f"Value should be between 0 and 20: {value}")
         return value
 
     @validator("confidence")
-    def validate_confidence(self, value):
+    def validate_confidence(cls, value):
         if value is not None:
             if value < 0 or value > 100:
                 raise ValueError(f"Value should be between 0 and 100: {value}")
         return value / 100
 
     @validator("bbox")
-    def validate_bbox(self, value):
+    def validate_bbox(cls, value):
         if len(value) != 4:
             raise ValueError("bbox should have exactly 4 elements")
         return value
 
     @validator("zoom_level")
-    def validate_zoom_level(self, value):
+    def validate_zoom_level(cls, value):
         if value < 18 or value > 22:
             raise ValueError("Zoom level should be between 18 and 22")
         return value
