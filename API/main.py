@@ -1,5 +1,6 @@
 import os
 import tempfile
+from typing import List, Optional
 
 import requests
 from fastapi import FastAPI
@@ -14,87 +15,119 @@ app = FastAPI(
 
 
 class PredictionRequest(BaseModel):
-    bbox: list[float] = Field(
-        ...,
-        example=[
-            100.56228021333352,
-            13.685230854641182,
-            100.56383321235313,
-            13.685961853747969,
-        ],
-        description="Bounding box coordinates [min_longitude, min_latitude, max_longitude, max_latitude].",
-    )
+    """
+    Request model for the prediction endpoint.
+    """
+
+    bbox: List[float]
+
     checkpoint: str = Field(
         ...,
         example="path/to/model.tflite or https://example.com/model.tflite",
         description="Path or URL to the machine learning model file.",
     )
-    zoom: int = Field(
+
+    zoom_level: int = Field(
         ...,
-        ge=18,
-        le=23,
-        example=20,
-        description="Zoom level for predictions (between 18 and 23).",
-    )
-    tms: str = Field(
-        ...,
-        example="https://tiles.openaerialmap.org/6501a65c0906de000167e64d/0/6501a65c0906de000167e64e/{z}/{x}/{y}",
-        description="URL for tile map service.",
-    )
-    confidence: float = Field(
-        0.5,
-        example=0.5,
-        gt=0,
-        le=1,
-        description="Threshold probability for filtering out low-confidence predictions. Defaults to 0.5.",
-    )
-    area_threshold: PositiveFloat = Field(
-        3,
-        example=3,
-        description="Threshold for filtering polygon areas. Defaults to 3 sqm.",
-    )
-    tolerance: PositiveFloat = Field(
-        0.5,
-        example=0.5,
-        description="Tolerance parameter for simplifying polygons. Defaults to 0.5 m.",
-    )
-    tile_overlap_distance: PositiveFloat = Field(
-        0.15,
-        example=0.15,
-        description="Tile overlap distance to remove the strip between predictions. Defaults to 0.15 m.",
-    )
-    merge_adjacent_polygons: bool = Field(
-        True,
-        example=True,
-        description="Flag to merge adjacent polygons. Defaults to True.",
+        description="Zoom level of the tiles to be used for prediction.",
     )
 
-    @validator("bbox")
-    def validate_bbox_length(cls, value):
-        """
-        Validates the length of bbox coordinates.
-        """
-        if len(value) != 4:
-            raise ValueError("bbox must contain 4 float values")
+    source: str = Field(
+        ...,
+        description="Your Image URL on which you want to detect features.",
+    )
+
+    use_josm_q: Optional[bool] = Field(
+        False,
+        description="Indicates whether to use JOSM query. Defaults to False.",
+    )
+
+    merge_adjacent_polygons: Optional[bool] = Field(
+        True,
+        description="Merges adjacent self-intersecting or containing each other polygons. Defaults to True.",
+    )
+
+    confidence: Optional[int] = Field(
+        50,
+        description="Threshold probability for filtering out low-confidence predictions. Defaults to 50.",
+    )
+
+    max_angle_change: Optional[int] = Field(
+        15,
+        description="Maximum angle change parameter for prediction. Defaults to 15.",
+    )
+
+    skew_tolerance: Optional[int] = Field(
+        15,
+        description="Skew tolerance parameter for prediction. Defaults to 15.",
+    )
+
+    tolerance: Optional[float] = Field(
+        0.5,
+        description="Tolerance parameter for simplifying polygons. Defaults to 0.5.",
+    )
+
+    area_threshold: Optional[float] = Field(
+        3,
+        description="Threshold for filtering polygon areas. Defaults to 3.",
+    )
+
+    tile_overlap_distance: Optional[float] = Field(
+        0.15,
+        description="Provides tile overlap distance to remove the strip between predictions. Defaults to 0.15.",
+    )
+
+    @validator(
+        "max_angle_change",
+        "skew_tolerance",
+        "tolerance",
+        "tile_overlap_distance",
+        "area_threshold",
+    )
+    def validate_values(self, value):
+        if value is not None:
+            if value < 0 or value > 45:
+                raise ValueError(f"Value should be between 0 and 45: {value}")
         return value
 
-    @validator("checkpoint")
-    def validate_checkpoint(cls, value):
-        """
-        Validates checkpoint parameter. If URL, download the file to temp directory.
-        """
-        if value.startswith("http"):
-            response = requests.get(value)
-            if response.status_code != 200:
-                raise ValueError(
-                    "Failed to download model checkpoint from the provided URL"
-                )
-            _, temp_file_path = tempfile.mkstemp(suffix=".tflite")
-            with open(temp_file_path, "wb") as f:
-                f.write(response.content)
-            return temp_file_path
-        elif not os.path.exists(value):
-            raise ValueError("Model checkpoint file not found")
+    @validator("tolerance")
+    def validate_tolerance(self, value):
+        if value is not None:
+            if value < 0 or value > 10:
+                raise ValueError(f"Value should be between 0 and 10: {value}")
+        return value
+
+    @validator("tile_overlap_distance")
+    def validate_tile_overlap_distance(self, value):
+        if value is not None:
+            if value < 0 or value > 1:
+                raise ValueError(f"Value should be between 0 and 1: {value}")
+        return value
+
+    @validator("area_threshold")
+    def validate_area_threshold(self, value):
+        if value is not None:
+            if value < 0 or value > 20:
+                raise ValueError(f"Value should be between 0 and 20: {value}")
+        return value
+
+    @validator("confidence")
+    def validate_confidence(self, value):
+        if value is not None:
+            if value < 0 or value > 100:
+                raise ValueError(f"Value should be between 0 and 100: {value}")
+        return value / 100
+
+    @validator("bbox")
+    def validate_bbox(self, value):
+        if len(value) != 4:
+            raise ValueError("bbox should have exactly 4 elements")
+        return value
+
+    @validator("zoom_level")
+    def validate_zoom_level(self, value):
+        if value < 18 or value > 22:
+            raise ValueError("Zoom level should be between 18 and 22")
         return value
 
 
@@ -111,15 +144,18 @@ async def predict_api(request: PredictionRequest):
     """
     try:
         predictions = predict(
-            request.bbox,
-            request.checkpoint,
-            request.zoom,
-            request.tms,
+            bbox=request.bbox,
+            model_path=request.checkpoint,
+            zoom_level=request.zoom_level,
+            tms_url=request.source,
+            tile_size=256,
             confidence=request.confidence,
-            area_threshold=request.area_threshold,
-            tolerance=request.tolerance,
             tile_overlap_distance=request.tile_overlap_distance,
             merge_adjancent_polygons=request.merge_adjacent_polygons,
+            max_angle_change=request.max_angle_change,
+            skew_tolerance=request.skew_tolerance,
+            tolerance=request.tolerance,
+            area_threshold=request.area_threshold,
         )
         return predictions
     except Exception as e:

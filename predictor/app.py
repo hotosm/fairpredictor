@@ -5,6 +5,8 @@ import shutil
 import time
 import uuid
 
+from orthogonalizer import othogonalize_poly
+
 from .downloader import download
 from .prediction import run_prediction
 from .raster2polygon import polygonizer
@@ -25,6 +27,9 @@ def predict(
     merge_adjancent_polygons=True,
     use_raster2polygon=False,
     remove_metadata=True,
+    use_josm_q=False,
+    max_angle_change=15,
+    skew_tolerance=15,
 ):
     """
     Parameters:
@@ -95,4 +100,13 @@ def predict(
         prediction_geojson_data = json.load(f)
     if remove_metadata:
         shutil.rmtree(base_path)
+    for feature in prediction_geojson_data["features"]:
+        feature["properties"]["building"] = "yes"
+        feature["properties"]["source"] = "fAIr"
+        if use_josm_q is True:
+            feature["geometry"] = othogonalize_poly(
+                feature["geometry"],
+                maxAngleChange=max_angle_change,
+                skewTolerance=skew_tolerance,
+            )
     return prediction_geojson_data
