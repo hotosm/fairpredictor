@@ -4,6 +4,7 @@ from typing import List, Optional
 
 import requests
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field, PositiveFloat, validator
 
 from predictor import predict
@@ -11,6 +12,17 @@ from predictor import predict
 app = FastAPI(
     title="fAIr Prediction API",
     description="Standalone API for Running .h5, .tf, .tflite Model Predictions",
+)
+
+
+origins = ["*"]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 
