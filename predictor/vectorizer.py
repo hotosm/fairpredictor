@@ -86,8 +86,8 @@ def vectorize(
                 if not merged:
                     merged_polygons.append(polygon)
 
-    areas = [poly.area for poly in merged_polygons]
-    max_area, median_area = np.max(areas), np.median(areas)
+    # areas = [poly.area for poly in merged_polygons]
+    # max_area, median_area = np.max(areas), np.median(areas)
     polygons_filtered = []
     for multi_polygon in merged_polygons:
         if multi_polygon.is_empty:
@@ -96,16 +96,10 @@ def vectorize(
         # If it's a MultiPolygon, iterate through individual polygons
         if multi_polygon.geom_type == "MultiPolygon":
             for polygon in multi_polygon.geoms:
-                if (
-                    polygon.area != max_area
-                    and polygon.area / median_area > area_threshold
-                ):
+                if polygon.area > area_threshold:
                     polygons_filtered.append(Polygon(polygon.exterior))
         # If it's a single Polygon, directly append it
-        elif (
-            multi_polygon.area != max_area
-            and multi_polygon.area / median_area > area_threshold
-        ):
+        elif multi_polygon.area > area_threshold:
             polygons_filtered.append(Polygon(multi_polygon.exterior))
 
     gs = gpd.GeoSeries(polygons_filtered, crs=kwargs["crs"]).simplify(tolerance)
