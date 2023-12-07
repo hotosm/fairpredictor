@@ -7,7 +7,7 @@ with io.open("README.md", encoding="utf-8") as f:
 
 setup(
     name="fairpredictor",
-    version="0.0.26",
+    version="0.0.30",
     url="https://github.com/kshitijrajsharma/fairpredictor",
     author="Kshitij Raj Sharma",
     author_email="skshitizraj@gmail.com",
@@ -33,6 +33,6 @@ setup(
         "geopandas<=0.14.5",
         "shapely>=1.0.0,<=2.0.2",
         "rasterio>=1.0.0,<=1.3.8",
-        # "raster2polygon",
+        "orthogonalizer",
     ],
 )

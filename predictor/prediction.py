@@ -11,15 +11,15 @@ import numpy as np
 
 try:
     import tflite_runtime.interpreter as tflite
-
 except ImportError:
-    try:
-        import tensorflow as tf
-        from tensorflow import keras
-    except ImportError:
-        raise ImportError(
-            "Neither TensorFlow nor TFLite is installed. Please install either TensorFlow or TFLite."
-        )
+    print(
+        "TFlite_runtime is not installed , Predictions with .tflite extension won't work"
+    )
+try:
+    from tensorflow import keras
+except ImportError:
+    print("Tensorflow is not installed , Predictions with .h5 or .tf won't work")
+
 
 from .georeferencer import georeference
 from .utils import open_images_keras, open_images_pillow, remove_files, save_mask
@@ -74,10 +74,6 @@ def run_prediction(
         input_tensor_index = interpreter.get_input_details()[0]["index"]
         output = interpreter.tensor(interpreter.get_output_details()[0]["index"])
     else:
-        try:
-            from tensorflow import keras
-        except ImportError:
-            raise ImportError("Neither TensorFlow not installed.")
         model = keras.models.load_model(checkpoint_path)
     print(f"It took {round(time.time()-start)} sec to load model")
     start = time.time()

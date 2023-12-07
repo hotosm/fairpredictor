@@ -14,7 +14,7 @@ from shapely.geometry import box
 try:
     from tensorflow import keras
 except ImportError:
-    print("Unable to import tensorflow")
+    pass
 
 IMAGE_SIZE = 256
 
@@ -94,6 +94,21 @@ def latlng2tile(zoom, lat, lng, tile_size):
     return t_x, t_y
 
 
+def tile_xy_to_quad_key(tile_x, tile_y, level_of_detail):
+    quad_key = []
+    for i in range(level_of_detail, 0, -1):
+        digit = "0"
+        mask = 1 << (i - 1)
+        if (tile_x & mask) != 0:
+            digit = chr(ord(digit) + 1)
+        if (tile_y & mask) != 0:
+            digit = chr(ord(digit) + 1)
+            digit = chr(ord(digit) + 1)
+        quad_key.append(digit)
+
+    return "".join(quad_key)
+
+
 def download_imagery(start: list, end: list, zm_level, base_path, source="maxar"):
     """Downloads imagery from start to end tile coordinate system
 
@@ -126,7 +141,9 @@ def download_imagery(start: list, end: list, zm_level, base_path, source="maxar"
                     raise ex
                 source_name = source
                 download_url = f"https://services.digitalglobe.com/earthservice/tmsaccess/tms/1.0.0/DigitalGlobe:ImageryTileService@EPSG:3857@jpg/{zm_level}/{download_path[0]}/{download_path[1]}.jpg?connectId={connect_id}&flipy=true"
-
+            elif source == "bing":
+                download_url = f"https://ecn.t2.tiles.virtualearth.net/tiles/a{tile_xy_to_quad_key(download_path[0],download_path[1],zm_level)}.jpeg?g=14037&pr=odbl&n=z"
+                print(download_url)
             else:
                 # source should be url as string , like this :  https://tiles.openaerialmap.org/62dbd947d8499800053796ec/0/62dbd947d8499800053796ed/{z}/{x}/{y}
                 if "{-y}" in source:

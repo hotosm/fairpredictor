@@ -1,5 +1,5 @@
 ## fAIr Predictor
-
+ 
 Run your fAIr Model Predictions anywhere ! 
 
 ## Prerequisites
@@ -47,7 +47,6 @@ There is another postprocessing option that supports distance threshold between 
 pip install raster2polygon
 ```
 
-
 ## Load Testing
 
 In order to perform load testing we use Locust , To enable this hit following command within the root dir 
@@ -57,3 +56,4 @@ In order to perform load testing we use Locust , To enable this hit following co
 locust -f locust.py
 ```
 Populate your HOST and replace it with BASE URL of the Predictor URL 
+

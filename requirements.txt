@@ -5,3 +5,4 @@ Pillow<=9.0.1
 geopandas<=0.10.2
 shapely
 rasterio
+orthogonalizer
