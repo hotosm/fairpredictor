@@ -49,12 +49,19 @@ pip install raster2polygon
 
 ## Load Testing
 
+**CAUTION : Always take permission of server admin before you perform load test** 
+
 In order to perform load testing we use Locust , To enable this hit following command within the root dir 
 
-**Caution : Always take permission of server admin before you perform load test** 
+- Install locust
 
-```
-locust -f locust.py
-```
+    ```
+    pip install locust
+    ```
+
+- Run locust script
+    ```
+    locust -f locust.py
+    ```
 Populate your HOST and replace it with BASE URL of the Predictor URL 
 
