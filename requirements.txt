@@ -6,3 +6,4 @@ geopandas<=0.10.2
 shapely
 rasterio
 orthogonalizer
+ramp-fair==0.1.2

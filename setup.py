@@ -34,5 +34,6 @@ setup(
         "shapely>=1.0.0,<=2.0.2",
         "rasterio>=1.0.0,<=1.3.8",
         "orthogonalizer",
+        "ramp-fair==0.1.2"
     ],
 )
