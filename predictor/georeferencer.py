@@ -13,7 +13,7 @@ from .utils import get_bounding_box
 
 
 def georeference(
-    input_path: str, output_path: str, is_mask=False, tile_overlap_distance=0.15
+    input_path: str, output_path: str, is_binary=False, tile_overlap_distance=0.15
 ) -> None:
     """Perform georeferencing and remove the fourth band from images (if any).
 
@@ -22,7 +22,7 @@ def georeference(
     Args:
         input_path: Path of the directory where the input data are stored.
         output_path: Path of the directory where the output data will go.
-        is_mask: Whether the image is binary or not.
+        is_binary: Whether the image is binary or not.
         tile_overlap_distance : Default overlap distance between two tiles to omit the strip between tiles
 
     Example::
@@ -48,11 +48,18 @@ def georeference(
         y_max += tile_overlap_distance
 
         # Use one band for masks and the first three bands for images
-        bands = [1] if is_mask else [1, 2, 3]
+
         crs = {"init": "epsg:3857"}
 
         with rasterio.open(in_file) as src:
             # Read image data
+            # print(src.count)
+            # if is_binary:
+            #     # Use the first band for binary masks
+            #     bands = [1]
+            # else:
+            #     # Use all bands for multichannel images
+            bands = list(range(1, src.count + 1))
             data = src.read(bands)
             transform = from_bounds(
                 x_min, y_min, x_max, y_max, data.shape[2], data.shape[1]

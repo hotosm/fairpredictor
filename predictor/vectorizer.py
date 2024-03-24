@@ -10,6 +10,7 @@ import numpy as np
 import rasterio as rio
 from rasterio.enums import Resampling
 from rasterio.features import shapes
+from rasterio.io import MemoryFile
 from rasterio.merge import merge
 from shapely.geometry import Polygon, shape
 from tqdm import tqdm
@@ -50,17 +51,37 @@ def vectorize(
     base_path.mkdir(exist_ok=True, parents=True)
 
     raster_paths = glob(f"{input_path}/*.tif")
+    target_values = (255, 1)
+    binary_masks = []
     with rio.open(raster_paths[0]) as src:
         kwargs = src.meta.copy()
+        kwargs.update(dtype=rio.uint8, count=1)
 
-    rasters = [rio.open(path) for path in raster_paths]
+    for path in raster_paths:
+        with rio.open(path) as src:
+            print(src.count)
+            band_data = src.read()
+            binary_mask = np.logical_or(
+                band_data == target_values[0], band_data == target_values[1]
+            ).astype(rio.uint8)
+            print(band_data)
+
+            binary_masks.append(binary_mask)
+
+    memory_files = [MemoryFile() for _ in binary_masks]
+
+    datasets = []
+    for binary_mask, memfile in zip(binary_masks, memory_files):
+        dataset = memfile.open(**kwargs)
+        dataset.write(binary_mask)
+        datasets.append(dataset)
+
     mosaic, output = merge(
-        rasters,
+        datasets,
         resampling=Resampling.nearest,
     )
-
     # Close raster files after merging
-    for raster in rasters:
+    for raster in datasets:
         raster.close()
 
     polygons = [shape(s) for s, _ in shapes(mosaic, transform=output)]

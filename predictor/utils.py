@@ -7,6 +7,7 @@ from typing import List, Tuple
 
 import geopandas
 import numpy as np
+import rasterio
 import requests
 from PIL import Image
 from shapely.geometry import box
@@ -260,6 +261,23 @@ def remove_files(pattern: str) -> None:
 
 def save_mask(mask: np.ndarray, filename: str) -> None:
     """Save the mask array to the specified location."""
-    reshaped_mask = mask.reshape((IMAGE_SIZE, IMAGE_SIZE)) * 255
+    reshaped_mask = mask.reshape((IMAGE_SIZE, IMAGE_SIZE))
     result = Image.fromarray(reshaped_mask.astype(np.uint8))
     result.save(filename)
+
+
+def save_multiband_mask(mask: np.ndarray, filename: str, transform, crs) -> None:
+    """Save the multi-band mask array to the specified location using Rasterio."""
+    with rasterio.open(
+        filename,
+        "w",
+        driver="GTiff",
+        height=mask.shape[1],
+        width=mask.shape[2],
+        count=mask.shape[0],  # Number of bands
+        dtype=mask.dtype,
+        crs=crs,
+        transform=transform,
+    ) as dst:
+        for i in range(mask.shape[0]):
+            dst.write(mask[i, :, :], i + 1)

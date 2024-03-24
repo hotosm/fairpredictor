@@ -65,3 +65,7 @@ In order to perform load testing we use Locust , To enable this hit following co
     ```
 Populate your HOST and replace it with BASE URL of the Predictor URL 
 
+
+
+
+**Note** : Tensorflow tested upto version `2.12.0` and efficientnet tested upto `1.0.8` only 

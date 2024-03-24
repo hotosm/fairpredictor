@@ -30,6 +30,8 @@ def predict(
     use_josm_q=False,
     max_angle_change=15,
     skew_tolerance=15,
+    multi_masks=False,
+    verbose=True,
 ):
     """
     Parameters:
@@ -44,6 +46,7 @@ def predict(
         tolerance (float, optional): Tolerance parameter for simplifying polygons. Defaults to 0.5 m. Percentage Tolerance = (Tolerance in Meters / Arc Length in Meters ​)×100
         tile_overlap_distance : Provides tile overlap distance to remove the strip between predictions, Defaults to 0.15m
         merge_adjancent_polygons(bool,optional) : Merges adjacent self intersecting or containing each other polygons
+        multi_masks : Either to generate multimasks predictions or binary , Make sure you have multiple channels in the model that you are using for prediction before enabling this option
     """
     if base_path:
         base_path = os.path.join(base_path, "prediction", str(uuid.uuid4()))
@@ -71,6 +74,8 @@ def predict(
         prediction_path=prediction_path,
         confidence=confidence,
         tile_overlap_distance=tile_overlap_distance,
+        multi_masks=multi_masks,
+        verbose=verbose,
     )
     start = time.time()
 
@@ -95,7 +100,8 @@ def predict(
             tolerance=tolerance,
             merge_adjancent_polygons=merge_adjancent_polygons,
         )
-    print(f"It took {round(time.time()-start)} sec to extract polygons")
+    if verbose:
+        print(f"It took {round(time.time()-start)} sec to extract polygons")
     with open(geojson_path, "r") as f:
         prediction_geojson_data = json.load(f)
     if remove_metadata:
