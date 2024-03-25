@@ -3,7 +3,7 @@ import shutil
 import tempfile
 import unittest
 
-# import efficientnet.keras as efn
+import efficientnet.keras as efn
 import requests
 
 from predictor import predict
