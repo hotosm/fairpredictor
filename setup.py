@@ -26,13 +26,13 @@ setup(
         "Programming Language :: Python :: 3.9",
     ],
     install_requires=[
-        "requests",
-        "Pillow",
+        "requests<=2.31.0",
+        "Pillow<=9.0.1",
         "rtree>=1.0.0,<=1.1.0",
         "tqdm>=4.0.0,<=4.62.3",
         "geopandas<=0.14.5",
         "shapely>=1.0.0,<=2.0.2",
         "rasterio>=1.0.0,<=1.3.8",
-        "orthogonalizer",
+        "orthogonalizer<=0.0.4",
     ],
 )
