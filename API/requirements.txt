@@ -1,4 +1,4 @@
 fastapi==0.103.2
 uvicorn==0.22.0
-fairpredictor==0.0.31
+fairpredictor==0.0.32
 tflite-runtime==2.14.0
