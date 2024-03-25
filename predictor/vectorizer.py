@@ -23,7 +23,6 @@ def vectorize(
     output_path: str = None,
     tolerance: float = 0.5,
     area_threshold: float = 5,
-    merge_adjancent_polygons=True,
 ) -> None:
     """Polygonize raster tiles from the input path.
 
@@ -35,7 +34,6 @@ def vectorize(
         output_path: Path of the output file.
         tolerance (float, optional): Tolerance parameter for simplifying polygons. Defaults to 0.5 m. Percentage Tolerance = (Tolerance in Meters / Arc Length in Meters ​)×100
         area_threshold (float, optional): Threshold for filtering polygon areas. Defaults to 5 sqm.
-        merge_adjancent_polygons(bool,optional) : Merges adjacent self intersecting or containing each other polygons
 
     Example::
 
@@ -64,45 +62,15 @@ def vectorize(
         raster.close()
 
     polygons = [shape(s) for s, _ in shapes(mosaic, transform=output)]
-    merged_polygons = polygons
-    if merge_adjancent_polygons:
-        # Merge adjacent polygons
-        merged_polygons = []
+    gs = gpd.GeoSeries(polygons, crs=kwargs["crs"])
 
-        for polygon in polygons:
-            if not merged_polygons:
-                merged_polygons.append(polygon)
-            else:
-                merged = False
-                for i, merged_polygon in enumerate(merged_polygons):
-                    if (
-                        polygon.intersects(merged_polygon)
-                        or polygon.contains(merged_polygon)
-                        or merged_polygon.contains(polygon)
-                    ):
-                        merged_polygons[i] = merged_polygon.union(polygon)
-                        merged = True
-                        break
-                if not merged:
-                    merged_polygons.append(polygon)
+    # Explode MultiPolygons
+    gs = gs.explode()
 
-    # areas = [poly.area for poly in merged_polygons]
-    # max_area, median_area = np.max(areas), np.median(areas)
-    polygons_filtered = []
-    for multi_polygon in merged_polygons:
-        if multi_polygon.is_empty:
-            continue
+    # Filter by area threshold
+    gs = gs[gs.area >= area_threshold]
 
-        # If it's a MultiPolygon, iterate through individual polygons
-        if multi_polygon.geom_type == "MultiPolygon":
-            for polygon in multi_polygon.geoms:
-                if polygon.area > area_threshold:
-                    polygons_filtered.append(Polygon(polygon.exterior))
-        # If it's a single Polygon, directly append it
-        elif multi_polygon.area > area_threshold:
-            polygons_filtered.append(Polygon(multi_polygon.exterior))
-
-    gs = gpd.GeoSeries(polygons_filtered, crs=kwargs["crs"]).simplify(tolerance)
+    gs = gs.simplify(tolerance)
     if gs.empty:
         raise ValueError("No Features Found")
     gs.to_crs("EPSG:4326").to_file(output_path)

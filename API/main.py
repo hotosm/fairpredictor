@@ -184,7 +184,7 @@ async def predict_api(request: PredictionRequest):
     - Predicted results.
     """
     try:
-        predictions = predict(
+        predictions = await predict(
             bbox=request.bbox,
             model_path=request.checkpoint,
             zoom_level=request.zoom_level,
@@ -192,7 +192,6 @@ async def predict_api(request: PredictionRequest):
             tile_size=256,
             confidence=request.confidence,
             tile_overlap_distance=request.tile_overlap_distance,
-            merge_adjancent_polygons=request.merge_adjacent_polygons,
             max_angle_change=request.max_angle_change,
             skew_tolerance=request.skew_tolerance,
             tolerance=request.tolerance,
