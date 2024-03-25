@@ -34,8 +34,8 @@ class TestPredictor(unittest.TestCase):
     def test_predict(self):
         zoom_level = 20
         predictions = predict(BBOX, self.model_path, zoom_level, TMS_URL)
-        self.assertIsInstance(predictions, list)
-        self.assertTrue(len(predictions) > 0)
+        self.assertIsInstance(predictions, dict)
+        self.assertTrue(len(predictions["features"]) > 0)
 
 
 if __name__ == "__main__":
