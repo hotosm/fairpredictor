@@ -26,7 +26,7 @@ def predict(
     tile_overlap_distance=0.15,
     use_raster2polygon=False,
     remove_metadata=True,
-    use_josm_q=False,
+    orthogonalize=False,
     max_angle_change=15,
     skew_tolerance=15,
 ):
@@ -100,7 +100,7 @@ def predict(
     for feature in prediction_geojson_data["features"]:
         feature["properties"]["building"] = "yes"
         feature["properties"]["source"] = "fAIr"
-        if use_josm_q is True:
+        if orthogonalize is True:
             feature["geometry"] = othogonalize_poly(
                 feature["geometry"],
                 maxAngleChange=max_angle_change,

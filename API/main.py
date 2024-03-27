@@ -67,11 +67,6 @@ class PredictionRequest(BaseModel):
         description="Indicates whether to use JOSM query. Defaults to False.",
     )
 
-    merge_adjacent_polygons: Optional[bool] = Field(
-        True,
-        description="Merges adjacent self-intersecting or containing each other polygons. Defaults to True.",
-    )
-
     confidence: Optional[int] = Field(
         50,
         description="Threshold probability for filtering out low-confidence predictions. Defaults to 50.",
@@ -196,6 +191,7 @@ async def predict_api(request: PredictionRequest):
             skew_tolerance=request.skew_tolerance,
             tolerance=request.tolerance,
             area_threshold=request.area_threshold,
+            orthogonalize=request.use_josm_q,
         )
         return predictions
     except Exception as e:
