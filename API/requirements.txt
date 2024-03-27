@@ -1,5 +1,6 @@
 fastapi==0.103.2
 uvicorn==0.22.0
-fairpredictor==0.0.33
+fairpredictor==0.0.34
 tflite-runtime==2.14.0
-tensorflow==2.9.2
+tensorflow==2.12.0 
+efficientnet==1.1.1

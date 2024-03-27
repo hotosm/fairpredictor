@@ -178,21 +178,21 @@ async def predict_api(request: PredictionRequest):
     Returns:
     - Predicted results.
     """
-    try:
-        predictions = await predict(
-            bbox=request.bbox,
-            model_path=request.checkpoint,
-            zoom_level=request.zoom_level,
-            tms_url=request.source,
-            tile_size=256,
-            confidence=request.confidence,
-            tile_overlap_distance=request.tile_overlap_distance,
-            max_angle_change=request.max_angle_change,
-            skew_tolerance=request.skew_tolerance,
-            tolerance=request.tolerance,
-            area_threshold=request.area_threshold,
-            orthogonalize=request.use_josm_q,
-        )
-        return predictions
-    except Exception as e:
-        return {"error": str(e)}
+    # try:
+    predictions = await predict(
+        bbox=request.bbox,
+        model_path=request.checkpoint,
+        zoom_level=request.zoom_level,
+        tms_url=request.source,
+        tile_size=256,
+        confidence=request.confidence,
+        tile_overlap_distance=request.tile_overlap_distance,
+        max_angle_change=request.max_angle_change,
+        skew_tolerance=request.skew_tolerance,
+        tolerance=request.tolerance,
+        area_threshold=request.area_threshold,
+        orthogonalize=request.use_josm_q,
+    )
+    return predictions
+    # except Exception as e:
+    #     return {"error": str(e)}
