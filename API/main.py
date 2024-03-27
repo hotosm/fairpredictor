@@ -168,7 +168,7 @@ class PredictionRequest(BaseModel):
 
 
 @app.post("/predict/")
-async def predict_api(request: PredictionRequest):
+def predict_api(request: PredictionRequest):
     """
     Endpoint to predict results based on specified parameters.
 
@@ -179,7 +179,7 @@ async def predict_api(request: PredictionRequest):
     - Predicted results.
     """
     # try:
-    predictions = await predict(
+    predictions = predict(
         bbox=request.bbox,
         model_path=request.checkpoint,
         zoom_level=request.zoom_level,
