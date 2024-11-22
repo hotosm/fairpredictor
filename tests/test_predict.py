@@ -14,9 +14,9 @@ TRAINING_ID = "training_457"
 
 class TestPredictor(unittest.TestCase):
     def setUp(self):
-        self.model_path_h5 = "checkpoints/ramp/checkpoint.h5"
-        self.model_path_tflite = "checkpoints/ramp/checkpoint.tflite"
-        self.model_path_pt = "checkpoints/yolo/checkpoint.pt"
+        self.model_path_h5 = "./checkpoints/ramp/checkpoint.h5"
+        self.model_path_tflite = "./checkpoints/ramp/checkpoint.tflite"
+        self.model_path_pt = "./checkpoints/yolo/checkpoint.pt"
 
     def test_predict_h5(self):
         zoom_level = 20
