@@ -27,7 +27,7 @@ setup(
     ],
     install_requires=[
         "requests<=2.31.0",
-        "Pillow<=9.0.1",
+        "Pillow<=9.1.0",
         "rtree>=1.0.0,<=1.1.0",
         "tqdm>=4.0.0,<=4.62.3",
         "geopandas<=0.14.5",
