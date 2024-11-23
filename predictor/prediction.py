@@ -46,8 +46,19 @@ def initialize_model(path, device=None):
         try:
             import tflite_runtime.interpreter as tflite
         except ImportError:
-            raise ImportError("TFlite_runtime is not installed.")
-        model = load_tflite_model(path)
+            print("TFlite_runtime is not installed.")
+        try:
+            from tensorflow import keras, lite
+        except ImportError:
+            raise ImportError(
+                "Install either tensorflow or tflite_runtime  to load tflite models"
+            )
+        try:
+            interpreter = tflite.Interpreter(model_path=path)
+        except Exception as ex:
+            interpreter = lite.Interpreter(model_path=path)
+        interpreter.allocate_tensors()
+        return interpreter
     elif model_type == "keras":
         try:
             from tensorflow import keras
@@ -63,15 +74,6 @@ def initialize_model(path, device=None):
             raise ImportError("YOLO & torch is not installed.")
         model = YOLO(path, task="segment")
     return model
-
-
-def load_tflite_model(checkpoint_path):
-    try:
-        interpreter = tflite.Interpreter(model_path=checkpoint_path)
-    except Exception as ex:
-        interpreter = lite.Interpreter(model_path=checkpoint_path)
-    interpreter.allocate_tensors()
-    return interpreter
 
 
 def predict_tflite(interpreter, image_batch, confidence):
