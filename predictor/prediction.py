@@ -219,9 +219,9 @@ def run_prediction(
     elif model_type == "yolo":
         predict_yolo(model, image_paths, prediction_path, confidence)
     elif model_type == "onnx":
-        for i in range((len(image_paths) + BATCH_SIZE - 1) // BATCH_SIZE):
-            image_batch = image_paths[BATCH_SIZE * i : BATCH_SIZE * (i + 1)]
-            preds = predict_onnx(model, image_batch, prediction_path, confidence)
+        # for i in range((len(image_paths) + BATCH_SIZE - 1) // BATCH_SIZE):
+        #     image_batch = image_paths[BATCH_SIZE * i : BATCH_SIZE * (i + 1)]
+        predict_onnx(model, image_paths, prediction_path, confidence)
 
     else:
         raise RuntimeError("Loaded model is not supported")
