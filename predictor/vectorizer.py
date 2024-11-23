@@ -65,7 +65,7 @@ def vectorize(
     gs = gpd.GeoSeries(polygons, crs=kwargs["crs"])
 
     # Explode MultiPolygons
-    gs = gs.explode()
+    gs = gs.explode(index_parts=True)
 
     # Filter by area threshold
     gs = gs[gs.area >= area_threshold]
