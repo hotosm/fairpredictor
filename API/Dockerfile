@@ -1,4 +1,4 @@
-ARG PYTHON_VERSION=3.12
+ARG PYTHON_VERSION=3.11
 
 FROM docker.io/python:${PYTHON_VERSION}-slim-bookworm
 
