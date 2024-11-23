@@ -30,7 +30,7 @@ setup(
         "Pillow<=9.1.0",
         "rtree>=1.0.0,<=1.1.0",
         "tqdm>=4.0.0,<=4.67.0",
-        "geopandas==0.14.4",
+        "geopandas<=0.14.4",
         "shapely>=1.0.0,<=2.0.2",
         "rasterio>=1.0.0,<=1.3.8",
         "orthogonalizer<=0.0.4",
