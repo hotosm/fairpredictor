@@ -1,11 +1,11 @@
-ARG PYTHON_VERSION=3.10
+ARG PYTHON_VERSION=3.12
 
 FROM docker.io/python:${PYTHON_VERSION}-slim-bookworm
 
 RUN apt-get update \
-    && apt-get -y upgrade \
-    && apt-get --no-install-recommends -y install \
-       build-essential libgdal-dev libboost-numpy-dev
+   && apt-get -y upgrade \
+   && apt-get --no-install-recommends -y install \
+   build-essential libgdal-dev libboost-numpy-dev
 
 COPY requirements.txt requirements.txt
 

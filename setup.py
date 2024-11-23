@@ -34,6 +34,6 @@ setup(
         "shapely>=1.0.0,<=2.0.2",
         "rasterio>=1.0.0,<=1.3.8",
         "orthogonalizer<=0.0.4",
-        # "hot-fair-utilities==2.0.1"
+        "hot-fair-utilities==2.0.2",
     ],
 )
