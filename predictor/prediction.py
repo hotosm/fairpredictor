@@ -14,7 +14,6 @@ from .utils import open_images_keras, open_images_pillow, remove_files, save_mas
 BATCH_SIZE = 8
 IMAGE_SIZE = 256
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
-os.environ["YOLO_AUTOINSTALL"] = "false"
 
 
 def get_model_type(path):
@@ -24,12 +23,14 @@ def get_model_type(path):
         return "tflite"
     elif path.endswith(".h5") or path.endswith(".tf"):
         return "keras"
+    elif path.endswith(".onnx"):
+        return "onnx"
     else:
         raise RuntimeError("Model type not supported")
 
 
-def initialize_model(path):
-    """Loads either keras, tflite, or yolo model."""
+def initialize_model(path, device=None):
+    """Loads either keras, tflite, yolo, or onnx model."""
     model_type = get_model_type(path)
 
     if model_type == "yolo":
@@ -38,7 +39,8 @@ def initialize_model(path):
             from ultralytics import YOLO
         except ImportError:  # YOLO is not installed
             raise ImportError("YOLO & torch is not installed.")
-        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        if not device:
+            device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         model = YOLO(path).to(device)
     elif model_type == "tflite":
         try:
@@ -54,8 +56,12 @@ def initialize_model(path):
                 "Tensorflow is not installed, Predictions with .h5 or .tf won't work"
             )
         model = keras.models.load_model(path)
-    else:
-        return path
+    elif model_type == "onnx":
+        try:
+            from ultralytics import YOLO
+        except ImportError:  # YOLO is not installed
+            raise ImportError("YOLO & torch is not installed.")
+        model = YOLO(path, task="segment")
     return model
 
 
@@ -113,6 +119,34 @@ def predict_yolo(model, image_paths, prediction_path, confidence):
             save_mask(preds, str(f"{prediction_path}/{Path(batch[i]).stem}.png"))
 
 
+def predict_onnx(model, image_paths, prediction_path, confidence):
+    import torch
+
+    for image_path in image_paths:
+        output_image = model.predict(
+            image_path,
+            conf=confidence,
+            imgsz=IMAGE_SIZE,
+            verbose=False,
+            device=torch.device("cuda" if torch.cuda.is_available() else "cpu"),
+        )
+
+        if hasattr(output_image, "masks") and output_image.masks is not None:
+            preds = (
+                output_image.masks.data.max(dim=0)[0].detach().cpu().numpy()
+            )  # Combine masks and convert to numpy
+        else:
+            preds = np.zeros(
+                (
+                    IMAGE_SIZE,
+                    IMAGE_SIZE,
+                ),
+                dtype=np.float32,
+            )  # Default if no masks
+
+        save_mask(preds, str(f"{prediction_path}/{Path(image_path).stem}.png"))
+
+
 def save_predictions(preds, image_batch, prediction_path):
     for idx, path in enumerate(image_batch):
         save_mask(preds[idx], str(f"{prediction_path}/{Path(path).stem}.png"))
@@ -125,28 +159,6 @@ def run_prediction(
     confidence: float = 0.5,
     tile_overlap_distance: float = 0.15,
 ) -> None:
-    """Predict building footprints for aerial images given a model checkpoint.
-
-    This function reads the model weights from the checkpoint path and outputs
-    predictions in GeoTIF format. The input images have to be in PNG format.
-
-    The predicted masks will be georeferenced with EPSG:3857 as CRS.
-
-    Args:
-        checkpoint_path: Path where the weights of the model can be found.
-        input_path: Path of the directory where the images are stored.
-        prediction_path: Path of the directory where the predicted images will go.
-        confidence: Threshold probability for filtering out low-confidence predictions.
-        tile_overlap_distance : Provides tile overlap distance to remove the strip between predictions.
-
-    Example::
-
-        predict(
-            "model_1_checkpt.tf",
-            "data/inputs_v2/4",
-            "data/predictions/4"
-        )
-    """
     if prediction_path is None:
         temp_dir = os.path.join("/tmp", "prediction", str(uuid.uuid4()))
         os.makedirs(temp_dir, exist_ok=True)
@@ -182,6 +194,11 @@ def run_prediction(
             save_predictions(preds, image_batch, prediction_path)
     elif model_type == "yolo":
         predict_yolo(model, image_paths, prediction_path, confidence)
+    elif model_type == "onnx":
+        for i in range((len(image_paths) + BATCH_SIZE - 1) // BATCH_SIZE):
+            image_batch = image_paths[BATCH_SIZE * i : BATCH_SIZE * (i + 1)]
+            preds = predict_onnx(model, image_batch, prediction_path, confidence)
+
     else:
         raise RuntimeError("Loaded model is not supported")
 

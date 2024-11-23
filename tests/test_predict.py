@@ -24,6 +24,9 @@ class TestPredictor(unittest.TestCase):
         self.model_path_pt = os.path.join(
             base_path, "checkpoints", "yolo", "checkpoint.pt"
         )
+        self.model_path_onnx = os.path.join(
+            base_path, "checkpoints", "yolo", "checkpoint.onnx"
+        )
 
     def test_predict_h5(self):
         zoom_level = 20
@@ -40,6 +43,12 @@ class TestPredictor(unittest.TestCase):
     def test_predict_pt(self):
         zoom_level = 20
         predictions = predict(BBOX, self.model_path_pt, zoom_level, TMS_URL)
+        self.assertIsInstance(predictions, dict)
+        self.assertTrue(len(predictions["features"]) > 0)
+
+    def test_predict_onnx(self):
+        zoom_level = 20
+        predictions = predict(BBOX, self.model_path_onnx, zoom_level, TMS_URL)
         self.assertIsInstance(predictions, dict)
         self.assertTrue(len(predictions["features"]) > 0)
 
