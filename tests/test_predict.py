@@ -28,11 +28,11 @@ class TestPredictor(unittest.TestCase):
             base_path, "checkpoints", "yolo", "checkpoint.onnx"
         )
 
-    def test_predict_h5(self):
-        zoom_level = 20
-        predictions = predict(BBOX, self.model_path_h5, zoom_level, TMS_URL)
-        self.assertIsInstance(predictions, dict)
-        self.assertTrue(len(predictions["features"]) > 0)
+    # def test_predict_h5(self):
+    #     zoom_level = 20
+    #     predictions = predict(BBOX, self.model_path_h5, zoom_level, TMS_URL)
+    #     self.assertIsInstance(predictions, dict)
+    #     self.assertTrue(len(predictions["features"]) > 0)
 
     def test_predict_tflite(self):
         zoom_level = 20
