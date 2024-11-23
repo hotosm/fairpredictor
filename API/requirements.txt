@@ -1,9 +1,9 @@
 fastapi==0.103.2
 uvicorn==0.22.0
 fairpredictor
-# tflite-runtime==2.14.0
-tensorflow==2.12.0 
-efficientnet==1.1.1
+tflite-runtime==2.14.0
+# tensorflow==2.12.0 
+# efficientnet==1.1.1
 onnx==1.17.0
 onnxruntime==1.20.1
 # hot-fair-utilities==2.0.2 ## TODO : Get rid of this after the testing with YOLOv1
