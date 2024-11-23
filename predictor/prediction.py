@@ -111,14 +111,24 @@ def predict_tflite(interpreter, image_paths, prediction_path, confidence):
             )
 
 
-def predict_keras(model, image_batch, confidence):
-    images = open_images_keras(image_batch)
-    images = images.reshape(-1, IMAGE_SIZE, IMAGE_SIZE, 3)
-    preds = model.predict(images)
-    preds = np.argmax(preds, axis=-1)
-    preds = np.expand_dims(preds, axis=-1)
-    preds = np.where(preds > confidence, 1, 0)
-    return preds
+def predict_keras(model, image_paths, prediction_path, confidence):
+
+    for i in range((len(image_paths) + BATCH_SIZE - 1) // BATCH_SIZE):
+        image_batch = image_paths[BATCH_SIZE * i : BATCH_SIZE * (i + 1)]
+        images = open_images_keras(image_batch)
+        images = images.reshape(-1, IMAGE_SIZE, IMAGE_SIZE, 3)
+        preds = model.predict(images)
+        preds = np.argmax(preds, axis=-1)
+        preds = np.expand_dims(preds, axis=-1)
+        preds = np.where(
+            preds > confidence, 1, 0
+        )  # Filter out low confidence predictions
+
+        for idx, path in enumerate(image_batch):
+            save_mask(
+                preds[idx],
+                str(f"{prediction_path}/{Path(path).stem}.png"),
+            )
 
 
 def predict_yolo(model, image_paths, prediction_path, confidence):
@@ -201,13 +211,11 @@ def run_prediction(
 
     if model_type == "tflite":
 
-        preds = predict_tflite(model, image_paths, prediction_path, confidence)
+        predict_tflite(model, image_paths, prediction_path, confidence)
 
     elif model_type == "keras":
-        for i in range((len(image_paths) + BATCH_SIZE - 1) // BATCH_SIZE):
-            image_batch = image_paths[BATCH_SIZE * i : BATCH_SIZE * (i + 1)]
-            preds = predict_keras(model, image_batch, confidence)
-            save_predictions(preds, image_batch, prediction_path)
+        predict_keras(model, image_batch, confidence)
+
     elif model_type == "yolo":
         predict_yolo(model, image_paths, prediction_path, confidence)
     elif model_type == "onnx":
