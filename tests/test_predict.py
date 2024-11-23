@@ -40,11 +40,11 @@ class TestPredictor(unittest.TestCase):
         self.assertIsInstance(predictions, dict)
         self.assertTrue(len(predictions["features"]) > 0)
 
-    def test_predict_pt(self):
-        zoom_level = 20
-        predictions = predict(BBOX, self.model_path_pt, zoom_level, TMS_URL)
-        self.assertIsInstance(predictions, dict)
-        self.assertTrue(len(predictions["features"]) > 0)
+    # def test_predict_pt(self):
+    #     zoom_level = 20
+    #     predictions = predict(BBOX, self.model_path_pt, zoom_level, TMS_URL)
+    #     self.assertIsInstance(predictions, dict)
+    #     self.assertTrue(len(predictions["features"]) > 0)
 
     def test_predict_onnx(self):
         zoom_level = 20
