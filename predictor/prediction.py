@@ -14,6 +14,7 @@ from .utils import open_images_keras, open_images_pillow, remove_files, save_mas
 BATCH_SIZE = 8
 IMAGE_SIZE = 256
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
+os.environ["YOLO_AUTOINSTALL"] = "false"
 
 
 def get_model_type(path):
