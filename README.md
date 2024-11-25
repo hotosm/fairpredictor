@@ -65,3 +65,26 @@ In order to perform load testing we use Locust , To enable this hit following co
     ```
 Populate your HOST and replace it with BASE URL of the Predictor URL 
 
+
+## Docker 
+
+### Build 
+```bash
+sudo docker build . -t fairpredictor 
+```
+
+### Run 
+```bash
+sudo docker run --rm --name fairpredictor -v $(pwd):/mnt -p 8000:8000 fairpredictor
+```
+
+### Navigate to localhost:8000 and shoot following request body 
+```json
+{
+  "bbox": [100.56228021333352, 13.685230854641182, 100.56383321235313, 13.685961853747969],
+  "checkpoint": "/mnt/tests/checkpoints/ramp/checkpoint.tflite",
+  "zoom_level": 20,
+  "source": "https://tiles.openaerialmap.org/6501a65c0906de000167e64d/0/6501a65c0906de000167e64e/{z}/{x}/{y}"
+}
+```
+

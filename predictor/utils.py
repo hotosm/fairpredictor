@@ -11,11 +11,6 @@ import requests
 from PIL import Image
 from shapely.geometry import box
 
-try:
-    from tensorflow import keras
-except ImportError:
-    pass
-
 IMAGE_SIZE = 256
 
 
