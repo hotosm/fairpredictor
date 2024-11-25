@@ -10,6 +10,7 @@ import numpy as np
 
 from .georeferencer import georeference
 from .utils import open_images_keras, open_images_pillow, remove_files, save_mask
+from .yoloseg import YOLOSeg
 
 BATCH_SIZE = 8
 IMAGE_SIZE = 256
@@ -69,10 +70,12 @@ def initialize_model(path, device=None):
         model = keras.models.load_model(path)
     elif model_type == "onnx":
         try:
-            from ultralytics import YOLO
+            # from ultralytics import YOLO
+            import onnxruntime
         except ImportError:  # YOLO is not installed
-            raise ImportError("YOLO & torch is not installed.")
-        model = YOLO(path, task="segment")
+            raise ImportError("onnnxruntime is not installed.")
+        model = path
+
     return model
 
 
@@ -152,22 +155,22 @@ def predict_yolo(model, image_paths, prediction_path, confidence):
             save_mask(preds, str(f"{prediction_path}/{Path(batch[i]).stem}.png"))
 
 
-def predict_onnx(model, image_paths, prediction_path, confidence):
-    import torch
+def predict_onnx(model_path, image_paths, prediction_path, confidence=0.25):
+    import cv2
+    from PIL import Image
 
+    yoloseg = YOLOSeg(model_path, conf_thres=confidence, iou_thres=0.3)
+
+    # Iterate through all images
     for image_path in image_paths:
-        output_image = model.predict(
-            image_path,
-            conf=confidence,
-            imgsz=IMAGE_SIZE,
-            verbose=False,
-            device=torch.device("cuda" if torch.cuda.is_available() else "cpu"),
-        )
+        image = cv2.imread(image_path)
+        boxes, scores, class_ids, masks = yoloseg(image)
+        mask_path = f"{prediction_path}/{Path(image_path).stem}.png"
 
-        if hasattr(output_image, "masks") and output_image.masks is not None:
-            preds = (
-                output_image.masks.data.max(dim=0)[0].detach().cpu().numpy()
-            )  # Combine masks and convert to numpy
+        if len(masks) > 0:
+            combined_mask = masks.max(axis=0) * 255  # Combine masks and scale to 255
+            result = Image.fromarray(combined_mask.astype(np.uint8))
+            result.save(mask_path)
         else:
             preds = np.zeros(
                 (
@@ -175,9 +178,8 @@ def predict_onnx(model, image_paths, prediction_path, confidence):
                     IMAGE_SIZE,
                 ),
                 dtype=np.float32,
-            )  # Default if no masks
-
-        save_mask(preds, str(f"{prediction_path}/{Path(image_path).stem}.png"))
+            )
+            save_mask(preds, mask_path)
 
 
 def save_predictions(preds, image_batch, prediction_path):
@@ -219,8 +221,6 @@ def run_prediction(
     elif model_type == "yolo":
         predict_yolo(model, image_paths, prediction_path, confidence)
     elif model_type == "onnx":
-        # for i in range((len(image_paths) + BATCH_SIZE - 1) // BATCH_SIZE):
-        #     image_batch = image_paths[BATCH_SIZE * i : BATCH_SIZE * (i + 1)]
         predict_onnx(model, image_paths, prediction_path, confidence)
 
     else:
