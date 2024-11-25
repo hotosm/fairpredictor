@@ -48,12 +48,12 @@ def initialize_model(path, device=None):
             import tflite_runtime.interpreter as tflite
         except ImportError:
             print("TFlite_runtime is not installed.")
-        try:
-            from tensorflow import keras, lite
-        except ImportError:
-            raise ImportError(
-                "Install either tensorflow or tflite_runtime  to load  tflite"
-            )
+            try:
+                from tensorflow import keras, lite
+            except ImportError:
+                raise ImportError(
+                    "Install either tensorflow or tflite_runtime  to load  tflite"
+                )
         try:
             interpreter = tflite.Interpreter(model_path=path)
         except Exception as ex:
