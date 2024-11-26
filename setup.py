@@ -7,7 +7,7 @@ with io.open("README.md", encoding="utf-8") as f:
 
 setup(
     name="fairpredictor",
-    version="0.0.38",
+    version="0.0.39",
     url="https://github.com/kshitijrajsharma/fairpredictor",
     author="Kshitij Raj Sharma",
     author_email="skshitizraj@gmail.com",
