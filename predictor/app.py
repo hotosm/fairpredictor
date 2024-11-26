@@ -97,6 +97,15 @@ def predict(
         prediction_geojson_data = json.load(f)
     if remove_metadata:
         shutil.rmtree(base_path)
+
+    if (
+        "features" in prediction_geojson_data
+        and len(prediction_geojson_data["features"]) > 0
+    ):
+        prediction_geojson_data["features"].pop(
+            -1
+        )  # Remove the last feature explicitly for the removal of whole bbox
+
     for feature in prediction_geojson_data["features"]:
         feature["properties"]["building"] = "yes"
         feature["properties"]["source"] = "fAIr"
