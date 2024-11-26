@@ -57,11 +57,16 @@ def vectorize(
         resampling=Resampling.nearest,
     )
 
-    # Close raster files after merging
     for raster in rasters:
         raster.close()
 
-    polygons = [shape(s) for s, _ in shapes(mosaic, transform=output)]
+    polygons = []
+
+    for s, value in shapes(mosaic, transform=output):
+
+        if value != 0:  # value 0 is background
+            polygons.append(shape(s))
+
     gs = gpd.GeoSeries(polygons, crs=kwargs["crs"])
 
     # Explode MultiPolygons
