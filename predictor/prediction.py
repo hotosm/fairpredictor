@@ -91,7 +91,7 @@ def predict_tflite(interpreter, image_paths, prediction_path, confidence):
     )
     interpreter.allocate_tensors()
     input_tensor_index = interpreter.get_input_details()[0]["index"]
-    output = interpreter.tensor(interpreter.get_output_details()[0]["index"])
+    output_tensor_index = interpreter.tensor(interpreter.get_output_details()[0]["index"])
     for i in range((len(image_paths) + BATCH_SIZE - 1) // BATCH_SIZE):
         image_batch = image_paths[BATCH_SIZE * i : BATCH_SIZE * (i + 1)]
         if len(image_batch) != BATCH_SIZE:
@@ -101,14 +101,15 @@ def predict_tflite(interpreter, image_paths, prediction_path, confidence):
             )
             interpreter.allocate_tensors()
             input_tensor_index = interpreter.get_input_details()[0]["index"]
-            output = interpreter.tensor(interpreter.get_output_details()[0]["index"])
+            output_tensor_index = interpreter.tensor(interpreter.get_output_details()[0]["index"])
         images = open_images_pillow(image_batch)
         images = images.reshape(-1, IMAGE_SIZE, IMAGE_SIZE, 3).astype(np.float32)
         interpreter.set_tensor(input_tensor_index, images)
         interpreter.invoke()
-        preds = output()
-        num_classes = preds.shape[-1]
-        print(f"Model returns {num_classes} classes")
+        preds = output_tensor_index().copy()
+
+        # num_classes = preds.shape[-1]
+        # print(f"Model returns {num_classes} classes")
         target_class = 1
         target_preds = preds[..., target_class]
         binary_masks = np.where(target_preds > confidence, 1, 0)
