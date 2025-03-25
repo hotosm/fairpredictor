@@ -107,15 +107,16 @@ def predict_tflite(interpreter, image_paths, prediction_path, confidence):
         interpreter.set_tensor(input_tensor_index, images)
         interpreter.invoke()
         preds = output()
-        preds = np.argmax(preds, axis=-1)
-        preds = np.expand_dims(preds, axis=-1)
-        preds = np.where(
-            preds > confidence, 1, 0
-        )  # Filter out low confidence predictions
-
+        num_classes = preds.shape[-1]
+        print(f"Model returns {num_classes} classes")
+        target_class = 1
+        target_preds = preds[..., target_class]
+        binary_masks = np.where(target_preds > confidence, 1, 0)
+        binary_masks = np.expand_dims(binary_masks, axis=-1)
+        
         for idx, path in enumerate(image_batch):
             save_mask(
-                preds[idx],
+                binary_masks[idx],
                 str(f"{prediction_path}/{Path(path).stem}.png"),
             )
 
@@ -127,15 +128,16 @@ def predict_keras(model, image_paths, prediction_path, confidence):
         images = open_images_keras(image_batch)
         images = images.reshape(-1, IMAGE_SIZE, IMAGE_SIZE, 3)
         preds = model.predict(images)
-        preds = np.argmax(preds, axis=-1)
-        preds = np.expand_dims(preds, axis=-1)
-        preds = np.where(
-            preds > confidence, 1, 0
-        )  # Filter out low confidence predictions
-
+        num_classes = preds.shape[-1]
+        print(f"Model returns {num_classes} classes")
+        target_class = 1
+        target_preds = preds[..., target_class]
+        binary_masks = np.where(target_preds > confidence, 1, 0)
+        binary_masks = np.expand_dims(binary_masks, axis=-1)
+        
         for idx, path in enumerate(image_batch):
             save_mask(
-                preds[idx],
+                binary_masks[idx],
                 str(f"{prediction_path}/{Path(path).stem}.png"),
             )
 
@@ -243,7 +245,7 @@ def run_prediction(
 
     start = time.time()
     georeference_path = os.path.join(prediction_path, "georeference")
-    georeference_prediction_tiles(prediction_path, georeference_path)
+    georeference_prediction_tiles(prediction_path, georeference_path, overlap_pixels=2)
     print(f"It took {round(time.time()-start)} sec to georeference")
 
     remove_files(f"{prediction_path}/*.xml")

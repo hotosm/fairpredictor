@@ -1,3 +1,4 @@
+import logging
 import os
 import tempfile
 from typing import List, Optional
@@ -80,6 +81,10 @@ class PredictionRequest(BaseModel):
     area_threshold: Optional[float] = Field(
         3,
         description="Threshold for filtering polygon areas. Defaults to 3.",
+    )
+    vectorization_algorithm: str = Field(
+        "rasterio",
+        description="Vectorization algorithm to adopt : potrace or rasterio",
     )
 
     @field_validator("tolerance")
@@ -168,6 +173,7 @@ async def predict_api(request: PredictionRequest):
             tolerance=request.tolerance,
             area_threshold=request.area_threshold,
             orthogonalize=request.orthogonalize,
+            vectorization_algorithm=request.vectorization_algorithm,
         )
         
         if request.checkpoint.startswith("/tmp") and os.path.exists(request.checkpoint):
@@ -178,5 +184,6 @@ async def predict_api(request: PredictionRequest):
                 
         return predictions
     except Exception as e:
-        raise e
-        raise HTTPException(status_code=500, detail=str(e))
+        # raise e
+        logging.error(f"Failed to run prediction: {e}")
+        raise HTTPException(status_code=500, detail=str('Failed to run prediction: '))

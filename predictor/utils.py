@@ -52,6 +52,7 @@ def save_mask(mask: np.ndarray, filename: str) -> None:
 def georeference_prediction_tiles(
     prediction_path: str,
     georeference_path: str,
+    overlap_pixels: int = 0,
 ) -> List[str]:
     """
     Georeference all prediction tiles based on their embedded x,y,z coordinates in filenames.
@@ -87,14 +88,14 @@ def georeference_prediction_tiles(
                     input_tiff=image_file,
                     x=x_tile,
                     y=y_tile,
-                    z=zoom,
+                    z=zoom, 
                     output_tiff=output_tiff,
                     crs="4326",
-                    overlap_pixels=1
+                    overlap_pixels=overlap_pixels
                 )
                 
                 georeferenced_files.append(georeferenced_file)
-                print(f"Georeferenced {filename} to {output_tiff}")
+                # print(f"Georeferenced {filename} to {output_tiff}")
             else:
                 print(f"Warning: Could not extract tile coordinates from {filename}")
                 
