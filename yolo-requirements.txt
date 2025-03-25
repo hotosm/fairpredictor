@@ -1,3 +1,0 @@
--r requirements.txt
-torch==2.5.1
-ultralytics==8.3.29

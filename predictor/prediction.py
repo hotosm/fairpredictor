@@ -8,8 +8,13 @@ from pathlib import Path
 # Third party imports
 import numpy as np
 
-from .georeferencer import georeference
-from .utils import open_images_keras, open_images_pillow, remove_files, save_mask
+from .utils import (
+    georeference_prediction_tiles,
+    open_images_keras,
+    open_images_pillow,
+    remove_files,
+    save_mask,
+)
 from .yoloseg import YOLOSeg
 
 BATCH_SIZE = 8
@@ -45,7 +50,8 @@ def initialize_model(path, device=None):
         model = YOLO(path).to(device)
     elif model_type == "tflite":
         try:
-            import tflite_runtime.interpreter as tflite
+            import ai_edge_litert.interpreter as tflite
+
         except ImportError:
             print("TFlite_runtime is not installed.")
             try:
@@ -192,7 +198,6 @@ def run_prediction(
     input_path: str,
     prediction_path: str = None,
     confidence: float = 0.5,
-    tile_overlap_distance: float = 0.15,
 ) -> None:
     if prediction_path is None:
         temp_dir = os.path.join("/tmp", "prediction", str(uuid.uuid4()))
@@ -209,7 +214,9 @@ def run_prediction(
     start = time.time()
 
     os.makedirs(prediction_path, exist_ok=True)
-    image_paths = glob(f"{input_path}/*.png")
+    image_paths = glob(f"{input_path}/*.tif")
+    if len(image_paths) == 0:
+        raise RuntimeError("No images found in the input directory")
 
     if model_type == "tflite":
 
@@ -236,12 +243,7 @@ def run_prediction(
 
     start = time.time()
     georeference_path = os.path.join(prediction_path, "georeference")
-    georeference(
-        prediction_path,
-        georeference_path,
-        is_mask=True,
-        tile_overlap_distance=tile_overlap_distance,
-    )
+    georeference_prediction_tiles(prediction_path, georeference_path)
     print(f"It took {round(time.time()-start)} sec to georeference")
 
     remove_files(f"{prediction_path}/*.xml")

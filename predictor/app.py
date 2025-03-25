@@ -1,34 +1,27 @@
-import importlib.util
 import json
 import os
 import shutil
 import time
 import uuid
 
-from orthogonalizer import othogonalize_poly
+from geomltoolkits.downloader import tms as TMSDownloader
+from geomltoolkits.regularizer import VectorizeMasks
+from geomltoolkits.utils import merge_rasters
 
-from .downloader import download
 from .prediction import run_prediction
-from .raster2polygon import polygonizer
-from .vectorizer import vectorize
 
 
-def predict(
+async def predict(
     bbox,
     model_path,
     zoom_level,
     tms_url,
-    tile_size=256,
     base_path=None,
     confidence=0.5,
     area_threshold=3,
     tolerance=0.5,
-    tile_overlap_distance=0.15,
-    use_raster2polygon=False,
     remove_metadata=True,
-    orthogonalize=False,
-    max_angle_change=15,
-    skew_tolerance=15,
+    orthogonalize=True,
 ):
     """
     Parameters:
@@ -41,7 +34,6 @@ def predict(
         confidence: Optional >> Threshold probability for filtering out low-confidence predictions, Defaults to 0.5
         area_threshold (float, optional): Threshold for filtering polygon areas. Defaults to 3 sqm.
         tolerance (float, optional): Tolerance parameter for simplifying polygons. Defaults to 0.5 m. Percentage Tolerance = (Tolerance in Meters / Arc Length in Meters ​)×100
-        tile_overlap_distance : Provides tile overlap distance to remove the strip between predictions, Defaults to 0.15m
     """
     if base_path:
         base_path = os.path.join(base_path, "prediction", str(uuid.uuid4()))
@@ -52,12 +44,13 @@ def predict(
     download_path = os.path.join(base_path, "image")
     os.makedirs(download_path, exist_ok=True)
 
-    image_download_path = download(
-        bbox,
-        zoom_level=zoom_level,
-        tms_url=tms_url,
-        tile_size=tile_size,
-        download_path=download_path,
+    image_download_path = await TMSDownloader.download_tiles(
+        bbox=bbox,
+        zoom=zoom_level,
+        tms=tms_url,
+        out=download_path,
+        georeference=False,
+        # dump=True,
     )
 
     prediction_path = os.path.join(base_path, "prediction")
@@ -68,43 +61,37 @@ def predict(
         image_download_path,
         prediction_path=prediction_path,
         confidence=confidence,
-        tile_overlap_distance=tile_overlap_distance,
     )
     start = time.time()
 
     geojson_path = os.path.join(base_path, "geojson")
     os.makedirs(geojson_path, exist_ok=True)
-    geojson_path = os.path.join(geojson_path, "prediction.geojson")
+    prediction_geojson_path = os.path.join(geojson_path, "prediction.geojson")
 
-    if use_raster2polygon:
-        try:
-            importlib.util.find_spec("raster2polygon")
-        except ImportError:
-            raise ImportError(
-                "Raster2polygon is not installed. Install using pip install raster2polygon"
-            )
+    prediction_merged_mask_path = os.path.join(base_path, "merged_prediction_mask.tif")
+    os.makedirs(os.path.dirname(prediction_merged_mask_path), exist_ok=True)
+    
+    # Merge rasters
+    merge_rasters(prediction_path, prediction_merged_mask_path)
 
-        geojson_path = polygonizer(prediction_path, output_path=geojson_path)
-    else:
-        geojson_path = vectorize(
-            prediction_path,
-            output_path=geojson_path,
-            area_threshold=area_threshold,
-            tolerance=tolerance,
-        )
+    converter = VectorizeMasks(
+        simplify_tolerance=tolerance,
+        min_area=area_threshold,
+        orthogonalize=orthogonalize,
+        algorithm="potrace",
+        tmp_dir=os.path.join(base_path, "tmp"),
+    )
+    converter.convert(prediction_merged_mask_path, prediction_geojson_path)
+
     print(f"It took {round(time.time()-start)} sec to extract polygons")
-    with open(geojson_path, "r") as f:
+    
+    with open(prediction_geojson_path, "r") as f:
         prediction_geojson_data = json.load(f)
+        
     if remove_metadata:
         shutil.rmtree(base_path)
 
     for feature in prediction_geojson_data["features"]:
         feature["properties"]["building"] = "yes"
         feature["properties"]["source"] = "fAIr"
-        if orthogonalize is True:
-            feature["geometry"] = othogonalize_poly(
-                feature["geometry"],
-                maxAngleChange=max_angle_change,
-                skewTolerance=skew_tolerance,
-            )
     return prediction_geojson_data
