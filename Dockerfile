@@ -7,15 +7,14 @@ RUN apt-get update \
     && apt-get --no-install-recommends -y install \
     build-essential libgdal-dev libboost-numpy-dev
 
-COPY API/requirements.txt api-requirements.txt
+COPY pyproject.toml pyproject.toml
 
 RUN \
     python3 -m pip install --upgrade pip \
-    && python3 -m pip install -r api-requirements.txt
+    && python3 -m pip install poetry && poetry install 
 
 
 COPY predictor /app/predictor
-COPY setup.py /app/setup.py
 COPY README.md /app/README.md
 
 

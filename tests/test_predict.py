@@ -1,6 +1,4 @@
 import os
-import shutil
-import tempfile
 import unittest
 
 from predictor import predict
