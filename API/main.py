@@ -182,6 +182,26 @@ class PredictionRequest(BaseModel):
         return value
 
 
+@app.get("/", include_in_schema=False)
+async def root():
+    """
+    Root endpoint that returns API information and documentation links.
+    """
+    return {
+        "name": "fAIr Prediction API",
+        "version": __version__,
+        "description": "Geospatial Machine Learning Prediction Service",
+        "documentation": {
+            "swagger_ui": "/docs",
+            "redoc": "/redoc",
+            "openapi_json": "/openapi.json",
+        },
+        "endpoints": {"health": "/health", "predict": "/predict"},
+        "contact": "tech@hotosm.org",
+        "license": "MIT",
+    }
+
+
 @app.get("/health")
 @limiter.limit("10/minute")
 async def health_check(request: Request):
