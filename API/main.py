@@ -98,7 +98,7 @@ class PredictionRequest(BaseModel):
                 "bbox": [100.56228, 13.685230, 100.56383, 13.685961],
                 "checkpoint": "https://fair-dev.hotosm.org/api/v1/workspace/download/ramp/baseline.tflite",
                 "zoom_level": 20,
-                "source": "https://apps.kontur.io/raster-tiler/oam/mosaic/{z}/{x}/{y}",
+                "source": "https://apps.kontur.io/raster-tiler/oam/mosaic/{z}/{x}/{y}.png",
                 "confidence": 50,
                 "tolerance": 0.5,
             }
@@ -203,32 +203,47 @@ async def health_check(request: Request):
 
 @app.post("/predict/")
 @limiter.limit(os.getenv("PREDICT_RATE_LIMIT", "5/minute"))
-async def predict_api(request: PredictionRequest, req: Request):
+async def predict_api(params: PredictionRequest, request: Request):
     try:
         predictions = await predict(
-            bbox=request.bbox,
-            model_path=request.checkpoint,
-            zoom_level=request.zoom_level,
-            tms_url=request.source,
-            confidence=request.confidence / 100,  # Convert percentage to decimal
-            tolerance=request.tolerance,
-            area_threshold=request.area_threshold,
-            orthogonalize=request.orthogonalize,
-            vectorization_algorithm=request.vectorization_algorithm,
+            bbox=params.bbox,
+            model_path=params.checkpoint,
+            zoom_level=params.zoom_level,
+            tms_url=params.source,
+            confidence=params.confidence / 100,  # Convert percentage to decimal
+            tolerance=params.tolerance,
+            area_threshold=params.area_threshold,
+            orthogonalize=params.orthogonalize,
+            vectorization_algorithm=params.vectorization_algorithm,
         )
 
         # Clean up temporary files
-        if request.checkpoint.startswith("/tmp") and os.path.exists(request.checkpoint):
+        if params.checkpoint.startswith("/tmp") and os.path.exists(params.checkpoint):
             try:
-                os.remove(request.checkpoint)
+                os.remove(params.checkpoint)
             except Exception as cleanup_error:
                 logger.warning(f"Failed to cleanup temp file: {cleanup_error}")
 
         return predictions
+    except RuntimeError as e:
+        error_message = str(e)
+        logger.warning(f"Runtime error during prediction: {error_message}")
+
+        if "No images found" in error_message:
+            raise HTTPException(
+                status_code=404,
+                detail="No images found in the specified area. Please check your bbox and source URL.",
+            )
+        else:
+            # Other runtime errors - could be client or server issue
+            raise HTTPException(
+                status_code=400, detail=f"Prediction failed: {error_message}"
+            )
     except Exception as e:
-        logger.error(f"Prediction failed: {e}", exc_info=True)
+        # Unexpected errors - likely server issues
+        logger.error(f"Prediction failed with unexpected error: {e}", exc_info=True)
         raise HTTPException(
-            status_code=500, detail=f"Failed to run prediction: {str(e)}"
+            status_code=500, detail=f"Internal server error during prediction: {str(e)}"
         )
 
 
