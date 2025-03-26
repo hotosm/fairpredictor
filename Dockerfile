@@ -34,7 +34,6 @@ RUN pip install poetry \
 
 COPY predictor ./predictor
 COPY README.md ./
-COPY setup.py ./
 COPY API/main.py ./
 
 EXPOSE 8000
