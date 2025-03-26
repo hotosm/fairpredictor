@@ -1006,14 +1006,14 @@ files = [
 
 [[package]]
 name = "geomltoolkits"
-version = "0.1.4"
+version = "0.1.6"
 description = "Toolkits for Geospatial Machine Learning"
 optional = false
 python-versions = ">=3.10"
 groups = ["main"]
 files = [
-    {file = "geomltoolkits-0.1.4-py3-none-any.whl", hash = "sha256:dc78f3fd64721897fac1ef56b5b8d6cd7bd3ed093ab76d99a6077d00e6ee1224"},
-    {file = "geomltoolkits-0.1.4.tar.gz", hash = "sha256:41d375779106d068035e9b27f42ae59bc96b930011eb52df096a468966276e14"},
+    {file = "geomltoolkits-0.1.6-py3-none-any.whl", hash = "sha256:7b02424d4f9ab20dc6528a0393f9e4eff3d9edaff3a91b1ea71834e2b4d56c30"},
+    {file = "geomltoolkits-0.1.6.tar.gz", hash = "sha256:187bc7de22ec0532b59da2b65c5a9a0b87c9505ac1cc17fa1ac0fb94334cfdee"},
 ]
 
 [package.dependencies]

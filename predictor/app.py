@@ -36,8 +36,10 @@ async def predict(
         area_threshold (float, optional): Threshold for filtering polygon areas. Defaults to 3 sqm.
         tolerance (float, optional): Tolerance parameter for simplifying polygons. Defaults to 0.5 m. Percentage Tolerance = (Tolerance in Meters / Arc Length in Meters ​)×100
     """
-    if vectorization_algorithm not in ['potrace', 'rasterio']:
-        raise ValueError(f"Vectorization algorithm {vectorization_algorithm} is not supported")
+    if vectorization_algorithm not in ["potrace", "rasterio"]:
+        raise ValueError(
+            f"Vectorization algorithm {vectorization_algorithm} is not supported"
+        )
     if base_path:
         base_path = os.path.join(base_path, "prediction", str(uuid.uuid4()))
     else:
@@ -53,7 +55,7 @@ async def predict(
         tms=tms_url,
         out=download_path,
         georeference=True,
-        crs = "3857",
+        crs="3857",
         # dump=True,
     )
 
@@ -77,7 +79,7 @@ async def predict(
 
     prediction_merged_mask_path = os.path.join(base_path, "merged_prediction_mask.tif")
     os.makedirs(os.path.dirname(prediction_merged_mask_path), exist_ok=True)
-    
+
     # Merge rasters
     merge_rasters(prediction_path, prediction_merged_mask_path)
 
@@ -88,17 +90,16 @@ async def predict(
         algorithm=vectorization_algorithm,
         tmp_dir=os.path.join(base_path, "tmp"),
     )
-    converter.convert(prediction_merged_mask_path, prediction_geojson_path)
+    gdf = converter.convert(prediction_merged_mask_path, prediction_geojson_path)
 
     print(f"It took {round(time.time()-start)} sec to extract polygons")
-    
-    with open(prediction_geojson_path, "r") as f:
-        prediction_geojson_data = json.load(f)
-        
+
+    gdf["building"] = "yes"
+    gdf["source"] = "fAIr"
+
+    prediction_geojson_data = json.loads(gdf.to_json())
+
     if remove_metadata:
         shutil.rmtree(base_path)
 
-    for feature in prediction_geojson_data["features"]:
-        feature["properties"]["building"] = "yes"
-        feature["properties"]["source"] = "fAIr"
     return prediction_geojson_data
