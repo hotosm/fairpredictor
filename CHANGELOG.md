@@ -1,3 +1,10 @@
+## v0.1.4 (2025-03-27)
+
+### Fix
+
+- **ci**: fixes env variabel in ci
+- update README to use asyncio for prediction execution
+
 ## v0.1.3 (2025-03-27)
 
 ### Fix
