@@ -98,7 +98,7 @@ class PredictionRequest(BaseModel):
                 "bbox": [100.56228, 13.685230, 100.56383, 13.685961],
                 "checkpoint": "https://fair-dev.hotosm.org/api/v1/workspace/download/ramp/baseline.tflite",
                 "zoom_level": 20,
-                "source": "https://tiles.openaerialmap.org/6501a65c0906de000167e64d/0/6501a65c0906de000167e64e/{z}/{x}/{y}",
+                "source": "https://apps.kontur.io/raster-tiler/oam/mosaic/{z}/{x}/{y}",
                 "confidence": 50,
                 "tolerance": 0.5,
             }
