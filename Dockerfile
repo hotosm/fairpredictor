@@ -1,28 +1,41 @@
-ARG PYTHON_VERSION=3.10
-
-FROM docker.io/python:${PYTHON_VERSION}-slim-bookworm
+FROM python:3.12-slim-bookworm AS builder
 
 RUN apt-get update \
     && apt-get -y upgrade \
     && apt-get --no-install-recommends -y install \
-    build-essential libgdal-dev libboost-numpy-dev
+    build-essential libgdal-dev libboost-numpy-dev \
+    libagg-dev libpotrace-dev pkg-config potrace
 
-COPY pyproject.toml pyproject.toml
+WORKDIR /build
 
-RUN \
-    python3 -m pip install --upgrade pip \
-    && python3 -m pip install poetry && poetry install 
+COPY pyproject.toml poetry.lock* ./
 
+RUN pip install --upgrade pip \
+    && pip install poetry \
+    && poetry config virtualenvs.create false
 
-COPY predictor /app/predictor
-COPY README.md /app/README.md
+FROM python:3.12-slim-bookworm
 
+RUN apt-get update \
+    && apt-get -y upgrade \
+    && apt-get --no-install-recommends -y install \
+    libgdal30 libpotrace0 potrace \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
-RUN python3 setup.py install 
+COPY --from=builder /build/pyproject.toml ./
+COPY --from=builder /build/poetry.lock* ./
 
-COPY API/main.py /app/main.py
+RUN pip install poetry \
+    && poetry config virtualenvs.create false \
+    && poetry install --no-dev
+
+COPY predictor ./predictor
+COPY README.md ./
+COPY setup.py ./
+COPY API/main.py ./
 
 EXPOSE 8000
 
