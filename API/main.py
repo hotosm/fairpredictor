@@ -96,7 +96,7 @@ class PredictionRequest(BaseModel):
         json_schema_extra={
             "example": {
                 "bbox": [100.56228, 13.685230, 100.56383, 13.685961],
-                "checkpoint": "https://fair-dev.hotosm.org/api/v1/workspace/download/ramp/baseline.tflite",
+                "checkpoint": "https://api-prod.fair.hotosm.org/api/v1/workspace/download/ramp/baseline.tflite",
                 "zoom_level": 20,
                 "source": "https://apps.kontur.io/raster-tiler/oam/mosaic/{z}/{x}/{y}.png",
                 "confidence": 50,

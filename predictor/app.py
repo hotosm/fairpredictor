@@ -15,7 +15,7 @@ async def predict(
     bbox,
     model_path,
     zoom_level,
-    tms_url,
+    tms_url='"https://apps.kontur.io/raster-tiler/oam/mosaic/{z}/{x}/{y}.png"',
     base_path=None,
     confidence=0.5,
     area_threshold=3,
