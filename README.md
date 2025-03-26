@@ -9,6 +9,7 @@ Run your fAIr Model Predictions anywhere !
 
 # Import 
 from predictor import predict, DEFAULT_OAM_TMS_MOSAIC, DEFAULT_RAMP_MODEL
+import asyncio 
 
 # Parameters for your predictions 
 bbox=[100.56228021333352,13.685230854641182,100.56383321235313,13.685961853747969]
@@ -17,7 +18,7 @@ zoom_level=20
 tms_url=DEFAULT_OAM_TMS_MOSAIC
 
 # Run your prediction 
-my_predictions=predict(bbox,model_path,zoom_level,tms_url)
+my_predictions=asyncio.run(predict(bbox,model_path,zoom_level,tms_url))
 print(my_predictions)
 
 ## Visualize your predictions 
