@@ -156,7 +156,7 @@ class PredictionRequest(BaseModel):
     )
 
     vectorization_algorithm: str = Field(
-        default="rasterio",
+        default=os.getenv("DEFAULT_VECOTRIZATION_ALGORITHM", "rasterio"),
         description="Algorithm for vectorization: 'rasterio' or 'potrace'",
         pattern="^(potrace|rasterio)$",
     )
