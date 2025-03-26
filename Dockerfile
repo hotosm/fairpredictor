@@ -1,3 +1,7 @@
+## docker build -t fairpredictor .
+## docker run --rm -p 8000:8000 fairpredictor
+
+
 FROM python:3.12-slim-bookworm AS builder
 
 RUN apt-get update \
@@ -17,11 +21,10 @@ RUN pip install --upgrade pip \
 FROM python:3.12-slim-bookworm
 
 RUN apt-get update \
-    && apt-get -y upgrade \
-    && apt-get --no-install-recommends -y install \
-    libgdal30 libpotrace0 potrace \
+    && apt-get --no-install-recommends -y install libgdal32 libpotrace0 potrace \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
+
 
 WORKDIR /app
 
@@ -30,7 +33,8 @@ COPY --from=builder /build/poetry.lock* ./
 
 RUN pip install poetry \
     && poetry config virtualenvs.create false \
-    && poetry install --no-dev
+    && poetry install --without dev --no-root
+
 
 COPY predictor ./predictor
 COPY README.md ./
