@@ -1,198 +1,285 @@
+import importlib.metadata
+import logging
 import os
+import subprocess
 import tempfile
+import time
 from typing import List, Optional
 
 import requests
-from fastapi import FastAPI
+from dotenv import load_dotenv
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel, Field, PositiveFloat, validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator
+from slowapi import Limiter
+from slowapi.util import get_remote_address
+from starlette.middleware.base import BaseHTTPMiddleware
 
 from predictor import predict
 
+load_dotenv()
+
+
+__version__ = importlib.metadata.version("fairpredictor")
+
+logging.basicConfig(
+    level=logging.getLevelName(os.getenv("LOG_LEVEL", "INFO")),
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+)
+logger = logging.getLogger(__name__)
+
+# Configure rate limiter
+limiter = Limiter(key_func=get_remote_address)
+
 app = FastAPI(
     title="fAIr Prediction API",
-    description="Standalone API for Running .h5, .tf, .tflite Model Predictions",
+    description="""
+    Geospatial Machine Learning Prediction Service
+
+    This API provides advanced feature detection and vectorization capabilities 
+    for geospatial data processing. It supports various machine learning model 
+    predictions with configurable parameters.
+
+    Key Features
+    - Flexible machine learning model predictions
+    - Customizable confidence and tolerance thresholds
+    - Multiple vectorization algorithms
+    - Comprehensive error handling and validation
+    """,
+    version=__version__,
+    contact={
+        "name": "fAIr Support",
+        "email": "tech@hotosm.org",
+    },
+    license_info={
+        "name": "MIT License",
+        "url": "https://opensource.org/licenses/MIT",
+    },
 )
 
+# Add limiter to app state
+app.state.limiter = limiter
 
-origins = ["*"]
+# Configure CORS
+origins = os.getenv("CORS_ORIGINS", "*").split(",")
+allowed_methods = os.getenv("CORS_ALLOW_METHODS", "GET,POST,OPTIONS").split(",")
+allowed_headers = os.getenv("CORS_ALLOW_HEADERS", "*").split(",")
+
 
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=allowed_methods,
+    allow_headers=allowed_headers,
 )
+
+
+class TimingMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request, call_next):
+        start_time = time.time()
+        response = await call_next(request)
+        process_time = time.time() - start_time
+        response.headers["X-Process-Time"] = f"{process_time:.4f} seconds"
+        return response
+
+
+app.add_middleware(TimingMiddleware)
 
 
 class PredictionRequest(BaseModel):
     """
-    Request model for the prediction endpoint.
-
-    Example :
-    {
-        "bbox": [
-            100.56228021333352,
-            13.685230854641182,
-            100.56383321235313,
-            13.685961853747969
-        ],
-        "checkpoint": "https://fair-dev.hotosm.org/api/v1/workspace/download/dataset_58/output/training_324//checkpoint.tflite",
-        "zoom_level": 20,
-        "source": "https://tiles.openaerialmap.org/6501a65c0906de000167e64d/0/6501a65c0906de000167e64e/{z}/{x}/{y}"
-    }
+    Prediction Request Model for Geospatial Machine Learning
     """
 
-    bbox: List[float]
+    model_config = ConfigDict(
+        json_schema_extra={
+            "example": {
+                "bbox": [100.56228, 13.685230, 100.56383, 13.685961],
+                "checkpoint": "https://api-prod.fair.hotosm.org/api/v1/workspace/download/ramp/baseline.tflite",
+                "zoom_level": 20,
+                "source": "https://apps.kontur.io/raster-tiler/oam/mosaic/{z}/{x}/{y}.png",
+                "confidence": 50,
+                "tolerance": 0.5,
+            }
+        }
+    )
+
+    bbox: List[float] = Field(
+        ...,
+        description="Geographical bounding box coordinates [min_lon, min_lat, max_lon, max_lat]",
+        min_items=4,
+        max_items=4,
+    )
 
     checkpoint: str = Field(
         ...,
-        example="path/to/model.tflite or https://example.com/model.tflite",
-        description="Path or URL to the machine learning model file.",
+        description="URL or local path to the machine learning model file",
     )
 
     zoom_level: int = Field(
         ...,
-        description="Zoom level of the tiles to be used for prediction.",
+        description="Zoom level for tile resolution (18-22)",
+        ge=18,
+        le=22,
     )
 
     source: str = Field(
         ...,
-        description="Your Image URL on which you want to detect features.",
+        description="Tile map service (TMS) URL template",
     )
 
-    use_josm_q: Optional[bool] = Field(
-        False,
-        description="Indicates whether to use JOSM query. Defaults to False.",
+    orthogonalize: Optional[bool] = Field(
+        default=True,
+        description="Apply orthogonalization to detected features",
     )
 
     confidence: Optional[int] = Field(
-        50,
-        description="Threshold probability for filtering out low-confidence predictions. Defaults to 50.",
-    )
-
-    max_angle_change: Optional[int] = Field(
-        15,
-        description="Maximum angle change parameter for prediction. Defaults to 15.",
-    )
-
-    skew_tolerance: Optional[int] = Field(
-        15,
-        description="Skew tolerance parameter for prediction. Defaults to 15.",
+        default=50,
+        description="Confidence threshold (0-100)",
+        ge=0,
+        le=100,
     )
 
     tolerance: Optional[float] = Field(
-        0.5,
-        description="Tolerance parameter for simplifying polygons. Defaults to 0.5.",
+        default=0.5,
+        description="Polygon simplification tolerance",
+        ge=0,
+        le=10,
     )
 
     area_threshold: Optional[float] = Field(
-        3,
-        description="Threshold for filtering polygon areas. Defaults to 3.",
+        default=3,
+        description="Minimum polygon area threshold",
+        ge=0,
+        le=20,
     )
 
-    tile_overlap_distance: Optional[float] = Field(
-        0.15,
-        description="Provides tile overlap distance to remove the strip between predictions. Defaults to 0.15.",
+    vectorization_algorithm: str = Field(
+        default=os.getenv("DEFAULT_VECOTRIZATION_ALGORITHM", "rasterio"),
+        description="Algorithm for vectorization: 'rasterio' or 'potrace'",
+        pattern="^(potrace|rasterio)$",
     )
 
-    @validator(
-        "max_angle_change",
-        "skew_tolerance",
-    )
-    def validate_values(cls, value):
-        if value is not None:
-            if value < 0 or value > 45:
-                raise ValueError(f"Value should be between 0 and 45: {value}")
-        return value
-
-    @validator("tolerance")
-    def validate_tolerance(cls, value):
-        if value is not None:
-            if value < 0 or value > 10:
-                raise ValueError(f"Value should be between 0 and 10: {value}")
-        return value
-
-    @validator("tile_overlap_distance")
-    def validate_tile_overlap_distance(cls, value):
-        if value is not None:
-            if value < 0 or value > 1:
-                raise ValueError(f"Value should be between 0 and 1: {value}")
-        return value
-
-    @validator("area_threshold")
-    def validate_area_threshold(cls, value):
-        if value is not None:
-            if value < 0 or value > 20:
-                raise ValueError(f"Value should be between 0 and 20: {value}")
-        return value
-
-    @validator("confidence")
-    def validate_confidence(cls, value):
-        if value is not None:
-            if value < 0 or value > 100:
-                raise ValueError(f"Value should be between 0 and 100: {value}")
-        return value / 100
-
-    @validator("bbox")
-    def validate_bbox(cls, value):
-        if len(value) != 4:
-            raise ValueError("bbox should have exactly 4 elements")
-        return value
-
-    @validator("zoom_level")
-    def validate_zoom_level(cls, value):
-        if value < 18 or value > 22:
-            raise ValueError("Zoom level should be between 18 and 22")
-        return value
-
-    @validator("checkpoint")
+    @field_validator("checkpoint")
     def validate_checkpoint(cls, value):
-        """
-        Validates checkpoint parameter. If URL, download the file to temp directory.
-        """
         if value.startswith("http"):
-            response = requests.get(value)
-            if response.status_code != 200:
-                raise ValueError(
-                    "Failed to download model checkpoint from the provided URL"
-                )
-            _, temp_file_path = tempfile.mkstemp(suffix=".tflite")
-            with open(temp_file_path, "wb") as f:
-                f.write(response.content)
-            return temp_file_path
+            try:
+                response = requests.get(value)
+                response.raise_for_status()
+
+                file_ext = os.path.splitext(value)[-1] or ".tflite"
+                _, temp_file_path = tempfile.mkstemp(suffix=file_ext)
+
+                with open(temp_file_path, "wb") as f:
+                    f.write(response.content)
+
+                return temp_file_path
+            except requests.exceptions.RequestException as e:
+                raise ValueError(f"Failed to download model checkpoint: {e}")
         elif not os.path.exists(value):
             raise ValueError("Model checkpoint file not found")
         return value
 
 
+@app.get("/", include_in_schema=False)
+async def root():
+    """
+    Root endpoint that returns API information and documentation links.
+    """
+    return {
+        "name": "fAIr Prediction API",
+        "version": __version__,
+        "description": "Geospatial Machine Learning Prediction Service",
+        "documentation": {
+            "swagger_ui": "/docs",
+            "redoc": "/redoc",
+            "openapi_json": "/openapi.json",
+        },
+        "endpoints": {"health": "/health", "predict": "/predict"},
+        "contact": "tech@hotosm.org",
+        "license": "MIT",
+    }
+
+
+@app.get("/health")
+@limiter.limit("10/minute")
+async def health_check(request: Request):
+    health_status = {"status": "healthy", "services": {}}
+
+    try:
+        potrace_version = subprocess.check_output(
+            ["potrace", "--version"], stderr=subprocess.STDOUT, text=True
+        )
+        health_status["services"]["potrace"] = {
+            "available": True,
+            "version": potrace_version.strip().split("\n")[0],
+        }
+    except (subprocess.CalledProcessError, FileNotFoundError):
+        health_status["services"]["potrace"] = {"available": False, "version": None}
+
+    return health_status
+
+
 @app.post("/predict/")
-def predict_api(request: PredictionRequest):
-    """
-    Endpoint to predict results based on specified parameters.
+@limiter.limit(os.getenv("PREDICT_RATE_LIMIT", "5/minute"))
+async def predict_api(params: PredictionRequest, request: Request):
+    try:
+        predictions = await predict(
+            bbox=params.bbox,
+            model_path=params.checkpoint,
+            zoom_level=params.zoom_level,
+            tms_url=params.source,
+            confidence=params.confidence / 100,  # Convert percentage to decimal
+            tolerance=params.tolerance,
+            area_threshold=params.area_threshold,
+            orthogonalize=params.orthogonalize,
+            vectorization_algorithm=params.vectorization_algorithm,
+        )
 
-    Parameters:
-    - `request` (PredictionRequest): Request body containing prediction parameters.
+        # Clean up temporary files
+        if params.checkpoint.startswith("/tmp") and os.path.exists(params.checkpoint):
+            try:
+                os.remove(params.checkpoint)
+            except Exception as cleanup_error:
+                logger.warning(f"Failed to cleanup temp file: {cleanup_error}")
 
-    Returns:
-    - Predicted results.
-    """
-    # try:
-    predictions = predict(
-        bbox=request.bbox,
-        model_path=request.checkpoint,
-        zoom_level=request.zoom_level,
-        tms_url=request.source,
-        tile_size=256,
-        confidence=request.confidence,
-        tile_overlap_distance=request.tile_overlap_distance,
-        max_angle_change=request.max_angle_change,
-        skew_tolerance=request.skew_tolerance,
-        tolerance=request.tolerance,
-        area_threshold=request.area_threshold,
-        orthogonalize=request.use_josm_q,
+        return predictions
+    except RuntimeError as e:
+        error_message = str(e)
+        logger.warning(f"Runtime error during prediction: {error_message}")
+
+        if "No images found" in error_message:
+            raise HTTPException(
+                status_code=404,
+                detail="No images found in the specified area. Please check your bbox and source URL.",
+            )
+        else:
+            # Other runtime errors - could be client or server issue
+            raise HTTPException(
+                status_code=400, detail=f"Prediction failed: {error_message}"
+            )
+    except Exception as e:
+        # Unexpected errors - likely server issues
+        logger.error(f"Prediction failed with unexpected error: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=500, detail=f"Internal server error during prediction: {str(e)}"
+        )
+
+
+@app.middleware("http")
+async def log_requests(request: Request, call_next):
+    logger.info(f"Incoming request: {request.method} {request.url}")
+    response = await call_next(request)
+    logger.info(f"Response status: {response.status_code}")
+    return response
+
+
+if __name__ == "__main__":
+    import uvicorn
+
+    uvicorn.run(
+        "main:app",
+        host=os.getenv("APP_HOST", "0.0.0.0"),
+        port=int(os.getenv("APP_PORT", 8000)),
     )
-    return predictions
-    # except Exception as e:
-    #     return {"error": str(e)}

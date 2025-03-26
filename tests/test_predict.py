@@ -1,6 +1,5 @@
+import asyncio
 import os
-import shutil
-import tempfile
 import unittest
 
 from predictor import predict
@@ -36,7 +35,9 @@ class TestPredictor(unittest.TestCase):
 
     def test_predict_tflite(self):
         zoom_level = 20
-        predictions = predict(BBOX, self.model_path_tflite, zoom_level, TMS_URL)
+        predictions = asyncio.run(
+            predict(BBOX, self.model_path_tflite, zoom_level, TMS_URL)
+        )
         self.assertIsInstance(predictions, dict)
         self.assertTrue(len(predictions["features"]) > 0)
 
@@ -48,7 +49,9 @@ class TestPredictor(unittest.TestCase):
 
     def test_predict_onnx(self):
         zoom_level = 20
-        predictions = predict(BBOX, self.model_path_onnx, zoom_level, TMS_URL)
+        predictions = asyncio.run(
+            predict(BBOX, self.model_path_onnx, zoom_level, TMS_URL)
+        )
         self.assertIsInstance(predictions, dict)
         self.assertTrue(len(predictions["features"]) > 0)
 

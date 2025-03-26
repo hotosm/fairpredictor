@@ -1,7 +1,8 @@
 from .app import predict
-from .downloader import download
-from .georeferencer import georeference
-from .prediction import run_prediction
-from .raster2polygon import polygonizer
-from .utils import download_imagery, get_start_end_download_coords
-from .vectorizer import vectorize
+
+DEFAULT_TMS_URL = "https://apps.kontur.io/raster-tiler/oam/mosaic/{z}/{x}/{y}.png"
+DEFAULT_YOLO_MODEL_V1 = "https://api-prod.fair.hotosm.org/api/v1/workspace/download/yolo/yolov8s_v1-seg.onnx"
+DEFAULT_RAMP_MODEL = (
+    "https://api-prod.fair.hotosm.org/api/v1/workspace/download/ramp/baseline.tflite"
+)
+DEFAULT_YOLO_MODEL_V2 = "https://api-prod.fair.hotosm.org/api/v1/workspace/download/yolo/yolov8s_v2-seg.onnx"

@@ -8,8 +8,13 @@ from pathlib import Path
 # Third party imports
 import numpy as np
 
-from .georeferencer import georeference
-from .utils import open_images_keras, open_images_pillow, remove_files, save_mask
+from .utils import (
+    georeference_prediction_tiles,
+    open_images_keras,
+    open_images_pillow,
+    remove_files,
+    save_mask,
+)
 from .yoloseg import YOLOSeg
 
 BATCH_SIZE = 8
@@ -45,7 +50,8 @@ def initialize_model(path, device=None):
         model = YOLO(path).to(device)
     elif model_type == "tflite":
         try:
-            import tflite_runtime.interpreter as tflite
+            import ai_edge_litert.interpreter as tflite
+
         except ImportError:
             print("TFlite_runtime is not installed.")
             try:
@@ -85,7 +91,7 @@ def predict_tflite(interpreter, image_paths, prediction_path, confidence):
     )
     interpreter.allocate_tensors()
     input_tensor_index = interpreter.get_input_details()[0]["index"]
-    output = interpreter.tensor(interpreter.get_output_details()[0]["index"])
+    output_tensor_index = interpreter.tensor(interpreter.get_output_details()[0]["index"])
     for i in range((len(image_paths) + BATCH_SIZE - 1) // BATCH_SIZE):
         image_batch = image_paths[BATCH_SIZE * i : BATCH_SIZE * (i + 1)]
         if len(image_batch) != BATCH_SIZE:
@@ -95,21 +101,23 @@ def predict_tflite(interpreter, image_paths, prediction_path, confidence):
             )
             interpreter.allocate_tensors()
             input_tensor_index = interpreter.get_input_details()[0]["index"]
-            output = interpreter.tensor(interpreter.get_output_details()[0]["index"])
+            output_tensor_index = interpreter.tensor(interpreter.get_output_details()[0]["index"])
         images = open_images_pillow(image_batch)
         images = images.reshape(-1, IMAGE_SIZE, IMAGE_SIZE, 3).astype(np.float32)
         interpreter.set_tensor(input_tensor_index, images)
         interpreter.invoke()
-        preds = output()
-        preds = np.argmax(preds, axis=-1)
-        preds = np.expand_dims(preds, axis=-1)
-        preds = np.where(
-            preds > confidence, 1, 0
-        )  # Filter out low confidence predictions
+        preds = output_tensor_index().copy()
 
+        # num_classes = preds.shape[-1]
+        # print(f"Model returns {num_classes} classes")
+        target_class = 1
+        target_preds = preds[..., target_class]
+        binary_masks = np.where(target_preds > confidence, 1, 0)
+        binary_masks = np.expand_dims(binary_masks, axis=-1)
+        
         for idx, path in enumerate(image_batch):
             save_mask(
-                preds[idx],
+                binary_masks[idx],
                 str(f"{prediction_path}/{Path(path).stem}.png"),
             )
 
@@ -121,15 +129,16 @@ def predict_keras(model, image_paths, prediction_path, confidence):
         images = open_images_keras(image_batch)
         images = images.reshape(-1, IMAGE_SIZE, IMAGE_SIZE, 3)
         preds = model.predict(images)
-        preds = np.argmax(preds, axis=-1)
-        preds = np.expand_dims(preds, axis=-1)
-        preds = np.where(
-            preds > confidence, 1, 0
-        )  # Filter out low confidence predictions
-
+        num_classes = preds.shape[-1]
+        print(f"Model returns {num_classes} classes")
+        target_class = 1
+        target_preds = preds[..., target_class]
+        binary_masks = np.where(target_preds > confidence, 1, 0)
+        binary_masks = np.expand_dims(binary_masks, axis=-1)
+        
         for idx, path in enumerate(image_batch):
             save_mask(
-                preds[idx],
+                binary_masks[idx],
                 str(f"{prediction_path}/{Path(path).stem}.png"),
             )
 
@@ -192,7 +201,7 @@ def run_prediction(
     input_path: str,
     prediction_path: str = None,
     confidence: float = 0.5,
-    tile_overlap_distance: float = 0.15,
+    crs: str = "3857",
 ) -> None:
     if prediction_path is None:
         temp_dir = os.path.join("/tmp", "prediction", str(uuid.uuid4()))
@@ -209,7 +218,9 @@ def run_prediction(
     start = time.time()
 
     os.makedirs(prediction_path, exist_ok=True)
-    image_paths = glob(f"{input_path}/*.png")
+    image_paths = glob(f"{input_path}/*.tif")
+    if len(image_paths) == 0:
+        raise RuntimeError("No images found in the input directory")
 
     if model_type == "tflite":
 
@@ -236,12 +247,7 @@ def run_prediction(
 
     start = time.time()
     georeference_path = os.path.join(prediction_path, "georeference")
-    georeference(
-        prediction_path,
-        georeference_path,
-        is_mask=True,
-        tile_overlap_distance=tile_overlap_distance,
-    )
+    georeference_prediction_tiles(prediction_path, georeference_path, overlap_pixels=2, crs=crs)
     print(f"It took {round(time.time()-start)} sec to georeference")
 
     remove_files(f"{prediction_path}/*.xml")
