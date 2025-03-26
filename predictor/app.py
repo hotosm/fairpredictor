@@ -94,6 +94,13 @@ async def predict(
 
     print(f"It took {round(time.time()-start)} sec to extract polygons")
 
+    if gdf.crs and gdf.crs != "EPSG:4326":
+        gdf = gdf.to_crs("EPSG:4326")
+    elif not gdf.crs:
+        # if not defined assume its 3857 because above 3857 is hardcoded
+        gdf.set_crs("EPSG:3857", inplace=True)
+        gdf = gdf.to_crs("EPSG:4326")
+
     gdf["building"] = "yes"
     gdf["source"] = "fAIr"
 
