@@ -1,3 +1,9 @@
+## v0.1.3 (2025-03-27)
+
+### Fix
+
+- **ci**: fixes python version as per the poetry min python
+
 ## v0.1.2 (2025-03-27)
 
 ### Fix
