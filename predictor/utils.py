@@ -53,6 +53,7 @@ def georeference_prediction_tiles(
     prediction_path: str,
     georeference_path: str,
     overlap_pixels: int = 0,
+    crs: str = "3857",
 ) -> List[str]:
     """
     Georeference all prediction tiles based on their embedded x,y,z coordinates in filenames.
@@ -90,7 +91,7 @@ def georeference_prediction_tiles(
                     y=y_tile,
                     z=zoom, 
                     output_tiff=output_tiff,
-                    crs="4326",
+                    crs=crs,
                     overlap_pixels=overlap_pixels
                 )
                 

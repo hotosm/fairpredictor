@@ -52,9 +52,12 @@ async def predict(
         zoom=zoom_level,
         tms=tms_url,
         out=download_path,
-        georeference=False,
+        georeference=True,
+        crs = "3857",
         # dump=True,
     )
+
+    # merge_rasters(image_download_path, os.path.join(base_path, "merged_image_chips.tif"))
 
     prediction_path = os.path.join(base_path, "prediction")
     os.makedirs(prediction_path, exist_ok=True)
@@ -64,6 +67,7 @@ async def predict(
         image_download_path,
         prediction_path=prediction_path,
         confidence=confidence,
+        crs="3857",
     )
     start = time.time()
 

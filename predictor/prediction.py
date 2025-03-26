@@ -201,6 +201,7 @@ def run_prediction(
     input_path: str,
     prediction_path: str = None,
     confidence: float = 0.5,
+    crs: str = "3857",
 ) -> None:
     if prediction_path is None:
         temp_dir = os.path.join("/tmp", "prediction", str(uuid.uuid4()))
@@ -246,7 +247,7 @@ def run_prediction(
 
     start = time.time()
     georeference_path = os.path.join(prediction_path, "georeference")
-    georeference_prediction_tiles(prediction_path, georeference_path, overlap_pixels=2)
+    georeference_prediction_tiles(prediction_path, georeference_path, overlap_pixels=2, crs=crs)
     print(f"It took {round(time.time()-start)} sec to georeference")
 
     remove_files(f"{prediction_path}/*.xml")
