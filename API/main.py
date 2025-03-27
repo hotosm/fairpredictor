@@ -129,7 +129,7 @@ class PredictionRequest(BaseModel):
         description="Tile map service (TMS) URL template",
     )
 
-    orthogonalize: Optional[bool] = Field(
+    use_josm_q: Optional[bool] = Field(
         default=True,
         description="Apply orthogonalization to detected features",
     )
@@ -233,7 +233,7 @@ async def predict_api(params: PredictionRequest, request: Request):
             confidence=params.confidence / 100,  # Convert percentage to decimal
             tolerance=params.tolerance,
             area_threshold=params.area_threshold,
-            orthogonalize=params.orthogonalize,
+            orthogonalize=params.use_josm_q,
             vectorization_algorithm=params.vectorization_algorithm,
         )
 
