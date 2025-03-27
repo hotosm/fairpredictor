@@ -62,8 +62,13 @@ def initialize_model(path, device=None):
                 )
         try:
             interpreter = tflite.Interpreter(model_path=path)
-        except Exception as ex:
-            interpreter = lite.Interpreter(model_path=path)
+        except ImportError:
+            try:
+                interpreter = lite.Interpreter(model_path=path)
+            except Exception as e:
+                raise RuntimeError(f"Failed to initialize TFLite interpreter: {str(e)}")
+        except Exception as e:
+            raise RuntimeError(f"Error loading TFLite model: {str(e)}")
         interpreter.allocate_tensors()
         return interpreter
     elif model_type == "keras":
@@ -91,7 +96,9 @@ def predict_tflite(interpreter, image_paths, prediction_path, confidence):
     )
     interpreter.allocate_tensors()
     input_tensor_index = interpreter.get_input_details()[0]["index"]
-    output_tensor_index = interpreter.tensor(interpreter.get_output_details()[0]["index"])
+    output_tensor_index = interpreter.tensor(
+        interpreter.get_output_details()[0]["index"]
+    )
     for i in range((len(image_paths) + BATCH_SIZE - 1) // BATCH_SIZE):
         image_batch = image_paths[BATCH_SIZE * i : BATCH_SIZE * (i + 1)]
         if len(image_batch) != BATCH_SIZE:
@@ -101,7 +108,9 @@ def predict_tflite(interpreter, image_paths, prediction_path, confidence):
             )
             interpreter.allocate_tensors()
             input_tensor_index = interpreter.get_input_details()[0]["index"]
-            output_tensor_index = interpreter.tensor(interpreter.get_output_details()[0]["index"])
+            output_tensor_index = interpreter.tensor(
+                interpreter.get_output_details()[0]["index"]
+            )
         images = open_images_pillow(image_batch)
         images = images.reshape(-1, IMAGE_SIZE, IMAGE_SIZE, 3).astype(np.float32)
         interpreter.set_tensor(input_tensor_index, images)
@@ -114,7 +123,7 @@ def predict_tflite(interpreter, image_paths, prediction_path, confidence):
         target_preds = preds[..., target_class]
         binary_masks = np.where(target_preds > confidence, 1, 0)
         binary_masks = np.expand_dims(binary_masks, axis=-1)
-        
+
         for idx, path in enumerate(image_batch):
             save_mask(
                 binary_masks[idx],
@@ -135,7 +144,7 @@ def predict_keras(model, image_paths, prediction_path, confidence):
         target_preds = preds[..., target_class]
         binary_masks = np.where(target_preds > confidence, 1, 0)
         binary_masks = np.expand_dims(binary_masks, axis=-1)
-        
+
         for idx, path in enumerate(image_batch):
             save_mask(
                 binary_masks[idx],
@@ -247,7 +256,9 @@ def run_prediction(
 
     start = time.time()
     georeference_path = os.path.join(prediction_path, "georeference")
-    georeference_prediction_tiles(prediction_path, georeference_path, overlap_pixels=2, crs=crs)
+    georeference_prediction_tiles(
+        prediction_path, georeference_path, overlap_pixels=2, crs=crs
+    )
     print(f"It took {round(time.time()-start)} sec to georeference")
 
     remove_files(f"{prediction_path}/*.xml")

@@ -9,6 +9,7 @@ from geomltoolkits.regularizer import VectorizeMasks
 from geomltoolkits.utils import merge_rasters
 
 from .prediction import run_prediction
+from .utils import download_or_validate_model
 
 
 async def predict(
@@ -45,6 +46,7 @@ async def predict(
     else:
         base_path = os.path.join(os.getcwd(), "prediction", str(uuid.uuid4()))
 
+    model_path = download_or_validate_model(model_path)
     os.makedirs(base_path, exist_ok=True)
     download_path = os.path.join(base_path, "image")
     os.makedirs(download_path, exist_ok=True)
