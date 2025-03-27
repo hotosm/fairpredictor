@@ -1,3 +1,10 @@
+## v0.1.6 (2025-03-27)
+
+### Fix
+
+- **typo**: fixes typo in env variable main
+- update README example to reflect correct import and usage for predictions
+
 ## v0.1.5 (2025-03-27)
 
 ### Fix
