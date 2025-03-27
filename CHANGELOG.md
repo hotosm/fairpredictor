@@ -1,3 +1,9 @@
+## v0.1.7 (2025-03-27)
+
+### Fix
+
+- **consistency**: added backward compatible api changes
+
 ## v0.1.6 (2025-03-27)
 
 ### Fix
