@@ -90,6 +90,11 @@ def initialize_model(path, device=None):
     return model
 
 
+import cv2
+from scipy import ndimage
+from skimage.morphology import skeletonize
+
+
 def predict_tflite(interpreter, image_paths, prediction_path, confidence):
     interpreter.resize_tensor_input(
         interpreter.get_input_details()[0]["index"], (BATCH_SIZE, 256, 256, 3)
@@ -121,12 +126,163 @@ def predict_tflite(interpreter, image_paths, prediction_path, confidence):
         # print(f"Model returns {num_classes} classes")
         target_class = 1
         target_preds = preds[..., target_class]
-        binary_masks = np.where(target_preds > confidence, 1, 0)
-        binary_masks = np.expand_dims(binary_masks, axis=-1)
 
         for idx, path in enumerate(image_batch):
+            confidence_map = target_preds[idx]
+
+            # Create visualization directory
+            viz_path = os.path.join(prediction_path, "visualization")
+            os.makedirs(viz_path, exist_ok=True)
+
+            # Save the raw confidence map for visualization
+            confidence_viz = np.uint8(confidence_map * 255)
+            cv2.imwrite(
+                f"{viz_path}/{Path(path).stem}_1_confidence.png", confidence_viz
+            )
+
+            # initial_mask = confidence_map
+            # # Initial mask - threshold at 0.2
+            initial_mask = (confidence_map > 0.7).astype(np.uint8)
+            cv2.imwrite(
+                f"{viz_path}/{Path(path).stem}_2_initial_mask.png", initial_mask * 255
+            )
+
+            # 2. Try watershed segmentation for better building separation ref https://www.geeksforgeeks.org/image-segmentation-with-watershed-algorithm-opencv-python/
+            # Create markers for watershed
+            dist_transform = cv2.distanceTransform(initial_mask, cv2.DIST_L2, 5)
+            dist_transform_viz = cv2.normalize(
+                dist_transform, None, 0, 255, cv2.NORM_MINMAX
+            ).astype(np.uint8)
+            cv2.imwrite(
+                f"{viz_path}/{Path(path).stem}_2a_distance_transform.png",
+                dist_transform_viz,
+            )
+
+            # Find sure foreground areas (building centers)
+            _, sure_fg = cv2.threshold(
+                dist_transform, 0.5 * dist_transform.max(), 255, 0
+            )
+            sure_fg = sure_fg.astype(np.uint8)
+            cv2.imwrite(f"{viz_path}/{Path(path).stem}_2b_sure_foreground.png", sure_fg)
+
+            # Mark each building center as a separate marker for watershed
+            markers, num_markers = ndimage.label(sure_fg)
+            cv2.imwrite(
+                f"{viz_path}/{Path(path).stem}_2c_markers.png",
+                cv2.normalize(markers, None, 0, 255, cv2.NORM_MINMAX).astype(np.uint8),
+            )
+
+            # 3. Only after watershed or as an alternative to watershed, apply erosion
+            kernel = np.ones((2, 2), np.uint8)
+            eroded_mask = cv2.erode(initial_mask, kernel, iterations=1)
+            cv2.imwrite(
+                f"{viz_path}/{Path(path).stem}_3_eroded_mask.png", eroded_mask * 255
+            )
+
+            # 4. Try using gradient information to identify building boundaries
+            # This helps separate buildings that are close to each other
+            sobelx = cv2.Sobel(confidence_map, cv2.CV_64F, 1, 0, ksize=3)
+            sobely = cv2.Sobel(confidence_map, cv2.CV_64F, 0, 1, ksize=3)
+            gradient_magnitude = np.sqrt(sobelx**2 + sobely**2)
+
+            # Normalize and visualize gradient
+            gradient_viz = cv2.normalize(
+                gradient_magnitude, None, 0, 255, cv2.NORM_MINMAX
+            ).astype(np.uint8)
+            cv2.imwrite(f"{viz_path}/{Path(path).stem}_3a_gradient.png", gradient_viz)
+
+            # 5. Use the gradient to create a mask that separates buildings
+            # High gradient areas are likely building boundaries
+            gradient_mask = gradient_magnitude > (0.3 * gradient_magnitude.max())
+            separation_mask = eroded_mask.copy()
+            separation_mask[gradient_mask] = 0
+            cv2.imwrite(
+                f"{viz_path}/{Path(path).stem}_3b_separation_mask.png",
+                separation_mask * 255,
+            )
+
+            # Skeletonize the mask to find thin connections
+            skeleton = skeletonize(separation_mask).astype(np.uint8)
+            cv2.imwrite(f"{viz_path}/{Path(path).stem}_3c_skeleton.png", skeleton * 255)
+
+            # Apply distance transform again to the separated mask
+            dist_transform2 = cv2.distanceTransform(separation_mask, cv2.DIST_L2, 5)
+
+            # Find the distance values along the skeleton
+            # Low values indicate narrow connections (chicken necks)
+            skeleton_distances = dist_transform2 * skeleton
+
+            # Find potential cut points - locations where skeleton is thin
+            # (small distance values along the skeleton)
+            cut_threshold = 3  # Adjust this threshold for your data
+            cut_points = (skeleton_distances > 0) & (skeleton_distances < cut_threshold)
+
+            # Create a new mask with the narrow connections removed
+            enhanced_separation_mask = separation_mask.copy()
+            enhanced_separation_mask[cut_points] = 0
+
+            # Visualize the cut points and enhanced separation
+            cut_points_viz = np.zeros_like(separation_mask, dtype=np.uint8)
+            cut_points_viz[cut_points] = 255
+            cv2.imwrite(
+                f"{viz_path}/{Path(path).stem}_3d_cut_points.png", cut_points_viz
+            )
+
+            cv2.imwrite(
+                f"{viz_path}/{Path(path).stem}_3e_enhanced_separation.png",
+                enhanced_separation_mask * 255,
+            )
+
+            # Now use this enhanced mask for component labeling
+            labeled_mask, num_components = ndimage.label(enhanced_separation_mask)
+
+            # 6. Now do component labeling on this enhanced mask
+            # labeled_mask, num_components = ndimage.label(separation_mask)
+            # Apply component labeling
+            # labeled_mask, num_components = ndimage.label(eroded_mask)
+
+            # Create a colorized version of the labeled mask for visualization
+            # This gives each component a different color
+            colored_labels = np.zeros(
+                (labeled_mask.shape[0], labeled_mask.shape[1], 3), dtype=np.uint8
+            )
+
+            # Create colorful visualization of components
+            unique_labels = np.unique(labeled_mask)[1:]  # Skip background (0)
+            for label in unique_labels:
+                # Generate a random color for this component
+                color = np.random.randint(0, 255, size=3)
+                colored_labels[labeled_mask == label] = color
+
+            cv2.imwrite(
+                f"{viz_path}/{Path(path).stem}_4_labeled_components.png", colored_labels
+            )
+
+            # Continue with your existing component processing
+            refined_mask = np.zeros_like(initial_mask)
+
+            for comp_id in range(1, num_components + 1):
+                component_mask = labeled_mask == comp_id
+                avg_confidence = np.mean(confidence_map[component_mask])
+
+                if avg_confidence >= confidence:
+                    refined_mask[component_mask] = 1
+
+            # Save the refined mask after confidence filtering
+            cv2.imwrite(
+                f"{viz_path}/{Path(path).stem}_5_refined_mask.png", refined_mask * 255
+            )
+
+            # Apply final morphological operations
+            kernel = np.ones((3, 3), np.uint8)
+            cleaned_mask = cv2.morphologyEx(refined_mask, cv2.MORPH_CLOSE, kernel)
+            cv2.imwrite(
+                f"{viz_path}/{Path(path).stem}_6_final_mask.png", cleaned_mask * 255
+            )
+
+            # Save the final mask for actual prediction output
             save_mask(
-                binary_masks[idx],
+                cleaned_mask,
                 str(f"{prediction_path}/{Path(path).stem}.png"),
             )
 
