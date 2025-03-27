@@ -1,3 +1,9 @@
+## v0.1.5 (2025-03-27)
+
+### Fix
+
+- **defaultmodelpath**: fixes bug with model path url
+
 ## v0.1.4 (2025-03-27)
 
 ### Fix
