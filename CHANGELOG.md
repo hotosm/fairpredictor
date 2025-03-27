@@ -1,3 +1,9 @@
+## v0.1.8 (2025-03-27)
+
+### Fix
+
+- **docker**: fixes bug on the prod build for the local lib installation
+
 ## v0.1.7 (2025-03-27)
 
 ### Fix
