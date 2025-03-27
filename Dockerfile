@@ -31,14 +31,13 @@ WORKDIR /app
 COPY --from=builder /build/pyproject.toml ./
 COPY --from=builder /build/poetry.lock* ./
 
-RUN pip install poetry \
-    && poetry config virtualenvs.create false \
-    && poetry install --without dev --no-root
-
-
 COPY predictor ./predictor
 COPY README.md ./
 COPY API/main.py ./
+
+RUN pip install poetry \
+    && poetry config virtualenvs.create false \
+    && poetry install --without dev
 
 EXPOSE 8000
 
