@@ -9,6 +9,7 @@ from pathlib import Path
 import numpy as np
 
 from .utils import (
+    clean_building_mask,
     georeference_prediction_tiles,
     open_images_keras,
     open_images_pillow,
@@ -121,36 +122,54 @@ def predict_tflite(interpreter, image_paths, prediction_path, confidence):
         # print(f"Model returns {num_classes} classes")
         target_class = 1
         target_preds = preds[..., target_class]
-        binary_masks = np.where(target_preds > confidence, 1, 0)
-        binary_masks = np.expand_dims(binary_masks, axis=-1)
-
         for idx, path in enumerate(image_batch):
+            
+            image_filename = Path(path).stem
+            
+            # Clean the mask
+            cleaned_mask = clean_building_mask(
+                target_preds[idx],
+                confidence_threshold=confidence,
+                morph_size=3,
+                small_object_threshold=50,
+            )
+            
+            # Expand dimensions for save_mask
+            cleaned_mask = np.expand_dims(cleaned_mask, axis=-1)
+            
             save_mask(
-                binary_masks[idx],
+                cleaned_mask,
                 str(f"{prediction_path}/{Path(path).stem}.png"),
             )
 
 
 def predict_keras(model, image_paths, prediction_path, confidence):
-
     for i in range((len(image_paths) + BATCH_SIZE - 1) // BATCH_SIZE):
         image_batch = image_paths[BATCH_SIZE * i : BATCH_SIZE * (i + 1)]
         images = open_images_keras(image_batch)
         images = images.reshape(-1, IMAGE_SIZE, IMAGE_SIZE, 3)
         preds = model.predict(images)
-        num_classes = preds.shape[-1]
-        print(f"Model returns {num_classes} classes")
+        
         target_class = 1
         target_preds = preds[..., target_class]
-        binary_masks = np.where(target_preds > confidence, 1, 0)
-        binary_masks = np.expand_dims(binary_masks, axis=-1)
-
+        
         for idx, path in enumerate(image_batch):
+            # Clean the mask
+            cleaned_mask = clean_building_mask(
+                target_preds[idx],
+                confidence_threshold=confidence,
+                morph_size=3,
+                small_object_threshold=50
+            )
+            
+            # Expand dimensions for save_mask
+            cleaned_mask = np.expand_dims(cleaned_mask, axis=-1)
+            
+            # Save the mask
             save_mask(
-                binary_masks[idx],
+                cleaned_mask,
                 str(f"{prediction_path}/{Path(path).stem}.png"),
             )
-
 
 def predict_yolo(model, image_paths, prediction_path, confidence):
     for idx in range(0, len(image_paths), BATCH_SIZE):
@@ -159,19 +178,27 @@ def predict_yolo(model, image_paths, prediction_path, confidence):
             model.predict(batch, conf=confidence, imgsz=IMAGE_SIZE, verbose=False)
         ):
             if hasattr(r, "masks") and r.masks is not None:
-                preds = (
-                    r.masks.data.max(dim=0)[0].detach().cpu().numpy()
-                )  # Combine masks and convert to numpy
+                # Get raw prediction mask
+                raw_mask = r.masks.data.max(dim=0)[0].detach().cpu().numpy()
+                
+                # Clean the mask
+                cleaned_mask = clean_building_mask(
+                    raw_mask,
+                    confidence_threshold=confidence,
+                )
+                
+                # Save the cleaned mask
+                save_mask(
+                    cleaned_mask, 
+                    str(f"{prediction_path}/{Path(batch[i]).stem}.png")
+                )
             else:
-                preds = np.zeros(
-                    (
-                        IMAGE_SIZE,
-                        IMAGE_SIZE,
-                    ),
-                    dtype=np.float32,
-                )  # Default if no masks
-            save_mask(preds, str(f"{prediction_path}/{Path(batch[i]).stem}.png"))
-
+                # No detections, create empty mask
+                empty_mask = np.zeros((IMAGE_SIZE, IMAGE_SIZE), dtype=np.float32)
+                save_mask(
+                    empty_mask, 
+                    str(f"{prediction_path}/{Path(batch[i]).stem}.png")
+                )
 
 def predict_onnx(model_path, image_paths, prediction_path, confidence=0.25):
     import cv2
@@ -186,8 +213,12 @@ def predict_onnx(model_path, image_paths, prediction_path, confidence=0.25):
         mask_path = f"{prediction_path}/{Path(image_path).stem}.png"
 
         if len(masks) > 0:
-            combined_mask = masks.max(axis=0) * 255  # Combine masks and scale to 255
-            result = Image.fromarray(combined_mask.astype(np.uint8))
+
+            combined_mask = masks.max(axis=0)
+            cleaned_mask = clean_building_mask(
+                combined_mask,
+            )
+            result = Image.fromarray((cleaned_mask * 255).astype(np.uint8))
             result.save(mask_path)
         else:
             preds = np.zeros(
@@ -236,7 +267,7 @@ def run_prediction(
         predict_tflite(model, image_paths, prediction_path, confidence)
 
     elif model_type == "keras":
-        predict_keras(model, image_batch, confidence)
+        predict_keras(model, image_paths,prediction_path, confidence)
 
     elif model_type == "yolo":
         predict_yolo(model, image_paths, prediction_path, confidence)
