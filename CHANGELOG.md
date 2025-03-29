@@ -1,3 +1,9 @@
+## v0.1.10 (2025-03-29)
+
+### Fix
+
+- **cleanup**: cleanups the predictions
+
 ## v0.1.9 (2025-03-29)
 
 ### Fix
