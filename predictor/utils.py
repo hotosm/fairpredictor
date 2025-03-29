@@ -66,7 +66,6 @@ def save_mask(mask: np.ndarray, filename: str) -> None:
     #     dst.write(reshaped_mask, 1)
 
 
-
 def georeference_prediction_tiles(
     prediction_path: str,
     georeference_path: str,
@@ -176,49 +175,45 @@ def download_or_validate_model(model_path: str) -> str:
 
     return model_path
 
-def clean_building_mask(target_preds: np.ndarray, confidence_threshold=0.5, 
-                      morph_size=3, small_object_threshold=50):
+
+def clean_building_mask(
+    target_preds: np.ndarray,
+    confidence_threshold=0.5,
+    morph_size=3,
+):
     """
     Clean up building masks to remove thin connections and improve precision.
-    
+
     Args:
         target_preds: Raw prediction or binary mask (0-1 range)
         confidence_threshold: Base threshold for building/non-building (ignored if input is already binary)
         morph_size: Size of morphological operation kernel
-        small_object_threshold: Minimum area of buildings to keep
     Returns:
         Cleaned binary mask
     """
     # Check if input is already binary (only contains 0s and 1s)
-    is_binary = np.array_equal(target_preds, target_preds.astype(bool).astype(target_preds.dtype))
-    
+    is_binary = np.array_equal(
+        target_preds, target_preds.astype(bool).astype(target_preds.dtype)
+    )
+
     if is_binary:
         # Skip thresholding if input is already binary
         binary_mask = target_preds.astype(np.uint8)
     else:
-        # Apply confidence thresholding
-        confidence_threshold = min(max(confidence_threshold, 0.1), 0.95)
-        binary_mask = np.where(target_preds > confidence_threshold, 1, 0).astype(np.uint8)
-    
+        binary_mask = np.where(target_preds > confidence_threshold, 1, 0).astype(
+            np.uint8
+        )
+
     # Define kernel for morphological operations
     kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (morph_size, morph_size))
-    
+
     # Apply opening to remove thin connections (erode then dilate)
     opened_mask = cv2.morphologyEx(binary_mask, cv2.MORPH_OPEN, kernel)
-    
+
     # Final erosion to amplify differences between buildings
-    eroded_mask = cv2.erode(opened_mask, kernel, iterations=2)
-    
+    eroded_mask = cv2.erode(opened_mask, kernel, iterations=1)
+
     # Fill holes in buildings with closing
     filled_mask = cv2.morphologyEx(eroded_mask, cv2.MORPH_CLOSE, kernel)
-    
-    # Filter small objects if threshold is provided
-    if small_object_threshold > 0:
-        num_labels, labels, stats, centroids = cv2.connectedComponentsWithStats(filled_mask, connectivity=8)
-        filtered_mask = np.zeros_like(filled_mask)
-        for i in range(1, num_labels):
-            if stats[i, cv2.CC_STAT_AREA] >= small_object_threshold:
-                filtered_mask[labels == i] = 1
-        return filtered_mask
-    
+
     return filled_mask

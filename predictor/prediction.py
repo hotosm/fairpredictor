@@ -123,20 +123,17 @@ def predict_tflite(interpreter, image_paths, prediction_path, confidence):
         target_class = 1
         target_preds = preds[..., target_class]
         for idx, path in enumerate(image_batch):
-            
-            image_filename = Path(path).stem
-            
+
             # Clean the mask
             cleaned_mask = clean_building_mask(
                 target_preds[idx],
                 confidence_threshold=confidence,
                 morph_size=3,
-                small_object_threshold=50,
             )
-            
+
             # Expand dimensions for save_mask
             cleaned_mask = np.expand_dims(cleaned_mask, axis=-1)
-            
+
             save_mask(
                 cleaned_mask,
                 str(f"{prediction_path}/{Path(path).stem}.png"),
@@ -149,27 +146,27 @@ def predict_keras(model, image_paths, prediction_path, confidence):
         images = open_images_keras(image_batch)
         images = images.reshape(-1, IMAGE_SIZE, IMAGE_SIZE, 3)
         preds = model.predict(images)
-        
+
         target_class = 1
         target_preds = preds[..., target_class]
-        
+
         for idx, path in enumerate(image_batch):
             # Clean the mask
             cleaned_mask = clean_building_mask(
                 target_preds[idx],
                 confidence_threshold=confidence,
                 morph_size=3,
-                small_object_threshold=50
             )
-            
+
             # Expand dimensions for save_mask
             cleaned_mask = np.expand_dims(cleaned_mask, axis=-1)
-            
+
             # Save the mask
             save_mask(
                 cleaned_mask,
                 str(f"{prediction_path}/{Path(path).stem}.png"),
             )
+
 
 def predict_yolo(model, image_paths, prediction_path, confidence):
     for idx in range(0, len(image_paths), BATCH_SIZE):
@@ -180,25 +177,24 @@ def predict_yolo(model, image_paths, prediction_path, confidence):
             if hasattr(r, "masks") and r.masks is not None:
                 # Get raw prediction mask
                 raw_mask = r.masks.data.max(dim=0)[0].detach().cpu().numpy()
-                
+
                 # Clean the mask
                 cleaned_mask = clean_building_mask(
                     raw_mask,
                     confidence_threshold=confidence,
                 )
-                
+
                 # Save the cleaned mask
                 save_mask(
-                    cleaned_mask, 
-                    str(f"{prediction_path}/{Path(batch[i]).stem}.png")
+                    cleaned_mask, str(f"{prediction_path}/{Path(batch[i]).stem}.png")
                 )
             else:
                 # No detections, create empty mask
                 empty_mask = np.zeros((IMAGE_SIZE, IMAGE_SIZE), dtype=np.float32)
                 save_mask(
-                    empty_mask, 
-                    str(f"{prediction_path}/{Path(batch[i]).stem}.png")
+                    empty_mask, str(f"{prediction_path}/{Path(batch[i]).stem}.png")
                 )
+
 
 def predict_onnx(model_path, image_paths, prediction_path, confidence=0.25):
     import cv2
@@ -267,7 +263,7 @@ def run_prediction(
         predict_tflite(model, image_paths, prediction_path, confidence)
 
     elif model_type == "keras":
-        predict_keras(model, image_paths,prediction_path, confidence)
+        predict_keras(model, image_paths, prediction_path, confidence)
 
     elif model_type == "yolo":
         predict_yolo(model, image_paths, prediction_path, confidence)
@@ -288,7 +284,7 @@ def run_prediction(
     start = time.time()
     georeference_path = os.path.join(prediction_path, "georeference")
     georeference_prediction_tiles(
-        prediction_path, georeference_path, overlap_pixels=2, crs=crs
+        prediction_path, georeference_path, overlap_pixels=3, crs=crs
     )
     print(f"It took {round(time.time()-start)} sec to georeference")
 

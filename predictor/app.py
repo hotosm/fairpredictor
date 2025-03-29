@@ -37,6 +37,8 @@ async def predict(
         area_threshold (float, optional): Threshold for filtering polygon areas. Defaults to 3 sqm.
         tolerance (float, optional): Tolerance parameter for simplifying polygons. Defaults to 0.5 m. Percentage Tolerance = (Tolerance in Meters / Arc Length in Meters ​)×100
     """
+    if confidence < 0 or confidence > 1:
+        raise ValueError("Confidence must be between 0 and 1")
     if vectorization_algorithm not in ["potrace", "rasterio"]:
         raise ValueError(
             f"Vectorization algorithm {vectorization_algorithm} is not supported"
