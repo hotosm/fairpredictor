@@ -13,7 +13,6 @@ from .utils import download_or_validate_model
 
 
 async def predict(
-    bbox,
     model_path,
     zoom_level,
     tms_url='"https://apps.kontur.io/raster-tiler/oam/mosaic/{z}/{x}/{y}.png"',
@@ -24,6 +23,8 @@ async def predict(
     remove_metadata=True,
     orthogonalize=True,
     vectorization_algorithm="rasterio",
+    bbox=None,
+    geojson=None,
 ):
     """
     Parameters:
@@ -37,6 +38,8 @@ async def predict(
         area_threshold (float, optional): Threshold for filtering polygon areas. Defaults to 3 sqm.
         tolerance (float, optional): Tolerance parameter for simplifying polygons. Defaults to 0.5 m. Percentage Tolerance = (Tolerance in Meters / Arc Length in Meters ​)×100
     """
+    if not bbox and not geojson:
+        raise ValueError("Either bbox or geojson must be provided")
     if confidence < 0 or confidence > 1:
         raise ValueError("Confidence must be between 0 and 1")
     if vectorization_algorithm not in ["potrace", "rasterio"]:
@@ -55,6 +58,7 @@ async def predict(
 
     image_download_path = await TMSDownloader.download_tiles(
         bbox=bbox,
+        geojson=geojson,
         zoom=zoom_level,
         tms=tms_url,
         out=download_path,
@@ -96,7 +100,7 @@ async def predict(
     )
     gdf = converter.convert(prediction_merged_mask_path, prediction_geojson_path)
 
-    print(f"It took {round(time.time()-start)} sec to extract polygons")
+    print(f"It took {round(time.time() - start)} sec to extract polygons")
 
     if gdf.crs and gdf.crs != "EPSG:4326":
         gdf = gdf.to_crs("EPSG:4326")
