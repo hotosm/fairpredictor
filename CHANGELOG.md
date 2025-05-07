@@ -1,3 +1,9 @@
+## v0.1.13 (2025-05-07)
+
+### Fix
+
+- **geojson**: add support for the filepath
+
 ## v0.1.12 (2025-05-07)
 
 ### Fix
