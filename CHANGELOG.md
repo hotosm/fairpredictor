@@ -1,3 +1,9 @@
+## v0.1.11 (2025-05-07)
+
+### Fix
+
+- **bump**: bumps recent version of predictor
+
 ## v0.1.10 (2025-03-29)
 
 ### Fix
