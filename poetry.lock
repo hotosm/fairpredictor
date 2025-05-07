@@ -1006,14 +1006,14 @@ files = [
 
 [[package]]
 name = "geomltoolkits"
-version = "0.1.6"
+version = "0.2.0"
 description = "Toolkits for Geospatial Machine Learning"
 optional = false
 python-versions = ">=3.10"
 groups = ["main"]
 files = [
-    {file = "geomltoolkits-0.1.6-py3-none-any.whl", hash = "sha256:7b02424d4f9ab20dc6528a0393f9e4eff3d9edaff3a91b1ea71834e2b4d56c30"},
-    {file = "geomltoolkits-0.1.6.tar.gz", hash = "sha256:187bc7de22ec0532b59da2b65c5a9a0b87c9505ac1cc17fa1ac0fb94334cfdee"},
+    {file = "geomltoolkits-0.2.0-py3-none-any.whl", hash = "sha256:814d5e4f3af0547d15321ef3e81f3f96c55e99f8c2520c25bd126efa85cc4d40"},
+    {file = "geomltoolkits-0.2.0.tar.gz", hash = "sha256:4fc65f444dce1502cb7b2515bcc0f0af300e1a5e240a1119c90010adc2c6f8af"},
 ]
 
 [package.dependencies]
@@ -3500,4 +3500,4 @@ testing = ["coverage[toml]", "zope.event", "zope.testing"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.10,<4.0"
-content-hash = "d2f63fa4f5bca06c8855b0175125d353f36117b759faf1c8db3b3564e876b83e"
+content-hash = "53a2b03c254713cf6d2c649060ecdc7f7c6b98af041609425ce71b944ea9d143"
