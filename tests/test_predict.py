@@ -36,7 +36,12 @@ class TestPredictor(unittest.TestCase):
     def test_predict_tflite(self):
         zoom_level = 20
         predictions = asyncio.run(
-            predict(BBOX, self.model_path_tflite, zoom_level, TMS_URL)
+            predict(
+                bbox=BBOX,
+                model_path=self.model_path_tflite,
+                zoom_level=zoom_level,
+                tms_url=TMS_URL,
+            )
         )
         self.assertIsInstance(predictions, dict)
         self.assertTrue(len(predictions["features"]) > 0)
@@ -50,7 +55,12 @@ class TestPredictor(unittest.TestCase):
     def test_predict_onnx(self):
         zoom_level = 20
         predictions = asyncio.run(
-            predict(BBOX, self.model_path_onnx, zoom_level, TMS_URL)
+            predict(
+                bbox=BBOX,
+                model_path=self.model_path_onnx,
+                zoom_level=zoom_level,
+                tms_url=TMS_URL,
+            )
         )
         self.assertIsInstance(predictions, dict)
         self.assertTrue(len(predictions["features"]) > 0)
