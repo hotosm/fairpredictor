@@ -1,3 +1,9 @@
+## v0.1.12 (2025-05-07)
+
+### Fix
+
+- **models**: introduces models to incorporate other developments on top
+
 ## v0.1.11 (2025-05-07)
 
 ### Fix
