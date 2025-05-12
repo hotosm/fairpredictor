@@ -1,0 +1,52 @@
+[project]
+name = "fairpredictor"
+description = "A package for running predictions using fAIr"
+authors = [
+    {name = "kshitijrajsharma",email = "skshitizraj@gmail.com"}
+]
+license = {text = "MIT"}
+readme = "README.md"
+requires-python = ">=3.10,<4.0"
+dependencies = [
+    "tqdm (>=4.67.1,<5.0.0)",
+    "pillow (>=11.1.0,<12.0.0)",
+    "geomltoolkits (>=0.3.0)",
+    "ai-edge-litert (>=1.2.0,<2.0.0)",
+    "opencv-python-headless (>=4.11.0.86,<5.0.0.0)",
+    "onnxruntime (>=1.21.0,<2.0.0)"
+]
+
+[tool.poetry]
+version = "0.1.13"
+packages = [
+    { include = "predictor", from = "." }
+]
+
+[tool.poetry.group.dev.dependencies]
+commitizen = "^4.4.1"
+black = "^25.1.0"
+pytest = "^8.3.5"
+
+
+[tool.poetry.group.load-test.dependencies]
+locust = "^2.33.2"
+
+
+[tool.poetry.group.api.dependencies]
+fastapi = "^0.115.12"
+uvicorn = "^0.34.0"
+slowapi = "^0.1.9"
+python-dotenv = "^1.1.0"
+
+
+
+[tool.commitizen]
+name = "cz_conventional_commits"
+tag_format = "v$version"
+version_scheme = "pep440"
+version_provider = "poetry"
+update_changelog_on_bump = true
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
