@@ -30,7 +30,7 @@ jobs:
 
       - name: Install dependencies and project
         run: |
-          uv pip install -e .
+          uv run pip install -e .
 
       - name: Run tests
         run: uv run pytest
