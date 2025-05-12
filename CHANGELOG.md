@@ -15,6 +15,24 @@
 - **tests**: migrate unit tests from unittest to pytest and clean up test structure
 - **tests**: improve readability of predict function calls in test cases
 
+## v0.3.0 (2025-05-12)
+
+### Fix
+
+- **version**: fixes toml version
+- **workflow**: update dependency sync step to set up Python environment
+- **pyproject**: correct package name from 'perdictor' to 'predictor'
+- **workflow**: update dependency sync step and adjust Python installation command
+- **workflow**: correct command to install project dependencies in unit test workflow
+- **workflow**: add step to install project dependencies in unit test workflow
+- **import**: fixes requests error
+- **dockerfile**: fixes bug on dockerfile building after uv migration
+
+### Refactor
+
+- **tests**: migrate unit tests from unittest to pytest and clean up test structure
+- **tests**: improve readability of predict function calls in test cases
+
 ## v0.1.13 (2025-05-07)
 
 ### Fix

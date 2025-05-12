@@ -1,6 +1,6 @@
 [project]
 name = "fairpredictor"
-version = "0.2.0"
+version = "0.3.0"
 description = "A package for running predictions using fAIr"
 authors = [
     {name = "kshitijrajsharma",email = "skshitizraj@gmail.com"}
@@ -37,7 +37,7 @@ load-test = [
 [tool.commitizen]
 name = "cz_conventional_commits"
 version_provider = "pep621"
-tag_format = v"$version"
+tag_format = "v$version"
 version_scheme = "semver"
 update_changelog_on_bump = true
 major_version_zero = true
