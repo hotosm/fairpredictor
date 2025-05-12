@@ -37,7 +37,7 @@ load-test = [
 [tool.commitizen]
 name = "cz_conventional_commits"
 version_provider = "pep621"
-tag_format = "$version"
+tag_format = v"$version"
 version_scheme = "semver"
 update_changelog_on_bump = true
 major_version_zero = true
