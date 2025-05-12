@@ -1,6 +1,7 @@
 import asyncio
 import os
-import unittest
+
+import pytest
 
 from predictor import predict
 
@@ -11,60 +12,57 @@ DATASET_ID = "dataset_65"
 TRAINING_ID = "training_457"
 
 
-class TestPredictor(unittest.TestCase):
-    def setUp(self):
-        base_path = os.path.abspath(os.path.dirname(__file__))
-        self.model_path_h5 = os.path.join(
-            base_path, "checkpoints", "ramp", "checkpoint.h5"
-        )
-        self.model_path_tflite = os.path.join(
-            base_path, "checkpoints", "ramp", "checkpoint.tflite"
-        )
-        self.model_path_pt = os.path.join(
-            base_path, "checkpoints", "yolo", "checkpoint.pt"
-        )
-        self.model_path_onnx = os.path.join(
-            base_path, "checkpoints", "yolo", "checkpoint.onnx"
-        )
-
-    # def test_predict_h5(self):
-    #     zoom_level = 20
-    #     predictions = predict(BBOX, self.model_path_h5, zoom_level, TMS_URL)
-    #     self.assertIsInstance(predictions, dict)
-    #     self.assertTrue(len(predictions["features"]) > 0)
-
-    def test_predict_tflite(self):
-        zoom_level = 20
-        predictions = asyncio.run(
-            predict(
-                bbox=BBOX,
-                model_path=self.model_path_tflite,
-                zoom_level=zoom_level,
-                tms_url=TMS_URL,
-            )
-        )
-        self.assertIsInstance(predictions, dict)
-        self.assertTrue(len(predictions["features"]) > 0)
-
-    # def test_predict_pt(self):
-    #     zoom_level = 20
-    #     predictions = predict(BBOX, self.model_path_pt, zoom_level, TMS_URL)
-    #     self.assertIsInstance(predictions, dict)
-    #     self.assertTrue(len(predictions["features"]) > 0)
-
-    def test_predict_onnx(self):
-        zoom_level = 20
-        predictions = asyncio.run(
-            predict(
-                bbox=BBOX,
-                model_path=self.model_path_onnx,
-                zoom_level=zoom_level,
-                tms_url=TMS_URL,
-            )
-        )
-        self.assertIsInstance(predictions, dict)
-        self.assertTrue(len(predictions["features"]) > 0)
+@pytest.fixture
+def model_paths():
+    base_path = os.path.abspath(os.path.dirname(__file__))
+    return {
+        "h5": os.path.join(base_path, "checkpoints", "ramp", "checkpoint.h5"),
+        "tflite": os.path.join(base_path, "checkpoints", "ramp", "checkpoint.tflite"),
+        "pt": os.path.join(base_path, "checkpoints", "yolo", "checkpoint.pt"),
+        "onnx": os.path.join(base_path, "checkpoints", "yolo", "checkpoint.onnx"),
+    }
 
 
-if __name__ == "__main__":
-    unittest.main()
+@pytest.fixture
+def zoom_level():
+    return 20
+
+
+# @pytest.mark.skip(reason="h5 model test is disabled")
+# def test_predict_h5(model_paths, zoom_level):
+#     predictions = predict(BBOX, model_paths["h5"], zoom_level, TMS_URL)
+#     assert isinstance(predictions, dict)
+#     assert len(predictions["features"]) > 0
+
+
+def test_predict_tflite(model_paths, zoom_level):
+    predictions = asyncio.run(
+        predict(
+            bbox=BBOX,
+            model_path=model_paths["tflite"],
+            zoom_level=zoom_level,
+            tms_url=TMS_URL,
+        )
+    )
+    assert isinstance(predictions, dict)
+    assert len(predictions["features"]) > 0
+
+
+# @pytest.mark.skip(reason="pt model test is disabled")
+# def test_predict_pt(model_paths, zoom_level):
+#     predictions = predict(BBOX, model_paths["pt"], zoom_level, TMS_URL)
+#     assert isinstance(predictions, dict)
+#     assert len(predictions["features"]) > 0
+
+
+def test_predict_onnx(model_paths, zoom_level):
+    predictions = asyncio.run(
+        predict(
+            bbox=BBOX,
+            model_path=model_paths["onnx"],
+            zoom_level=zoom_level,
+            tms_url=TMS_URL,
+        )
+    )
+    assert isinstance(predictions, dict)
+    assert len(predictions["features"]) > 0

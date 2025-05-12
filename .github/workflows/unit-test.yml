@@ -28,9 +28,5 @@ jobs:
       - name: Set up Python ${{ matrix.python-version }}
         run: uv python install ${{ matrix.python-version }}
 
-      - name: Install dependencies and project
-        run: |
-          uv run pip install -e .
-
       - name: Run tests
-        run: uv run pytest
+        run: pytest
