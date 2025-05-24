@@ -15,6 +15,12 @@
 - **tests**: migrate unit tests from unittest to pytest and clean up test structure
 - **tests**: improve readability of predict function calls in test cases
 
+## v0.3.3 (2025-05-24)
+
+### Fix
+
+- **module**: fixes build module
+
 ## v0.3.2 (2025-05-22)
 
 ### Fix
