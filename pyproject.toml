@@ -54,6 +54,7 @@ build-backend = "hatchling.build"
 [tool.hatch.build.targets.sdist]
 include = [
   "predictor/*.py",
+  "predictor/yoloseg/*.py",
 
 ]
 exclude = [
