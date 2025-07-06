@@ -15,6 +15,12 @@
 - **tests**: migrate unit tests from unittest to pytest and clean up test structure
 - **tests**: improve readability of predict function calls in test cases
 
+## v0.3.5 (2025-07-06)
+
+### Fix
+
+- **fixes-overcorrection-of-building-rotation**: fixes building rotation with new threshold
+
 ## v0.3.4 (2025-05-24)
 
 ### Fix
