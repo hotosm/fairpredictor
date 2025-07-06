@@ -48,14 +48,28 @@ class PredictionRequest(BaseModel):
         description="Tile map service (TMS) URL template",
     )
 
-    use_josm_q: Optional[bool] = Field(
+    orthogonalize: Optional[bool] = Field(
         default=True,
         description="Apply orthogonalization to detected features",
     )
 
+    ortho_skew_tolerance_deg: Optional[int] = Field(
+        default=15,
+        description="Skew tolerance for orthogonalization (0-45 degrees)",
+        ge=0,
+        le=45,
+    )
+
+    ortho_max_angle_change_deg: Optional[int] = Field(
+        default=15,
+        description="Maximum angle change for orthogonalization (0-45 degrees)",
+        ge=0,
+        le=45,
+    )
+
     confidence: Optional[int] = Field(
         default=50,
-        description="Confidence threshold (0-100)",
+        description="Confidence threshold % (0-100)",
         ge=0,
         le=100,
     )
@@ -68,16 +82,14 @@ class PredictionRequest(BaseModel):
     )
 
     area_threshold: Optional[float] = Field(
-        default=3,
+        default=2,
         description="Minimum polygon area threshold",
         ge=0,
         le=20,
     )
-
-    vectorization_algorithm: str = Field(
-        default=os.getenv("DEFAULT_VECTORIZATION_ALGORITHM", "rasterio"),
-        description="Algorithm for vectorization: 'rasterio' or 'potrace'",
-        pattern="^(potrace|rasterio)$",
+    get_predictions_as_points: Optional[bool] = Field(
+        default=False,
+        description="Whether to include predictions as points, this will create output geojson with extra points predictions",
     )
 
     @field_validator("checkpoint")

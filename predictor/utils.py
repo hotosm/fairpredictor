@@ -191,20 +191,18 @@ def clean_building_mask(
     Returns:
         Cleaned binary mask
     """
-    # Check if input is already binary (only contains 0s and 1s)
     is_binary = np.array_equal(
         target_preds, target_preds.astype(bool).astype(target_preds.dtype)
     )
 
     if is_binary:
-        # Skip thresholding if input is already binary
+        print("Input is already binary, skipping confidence thresholding.")
         binary_mask = target_preds.astype(np.uint8)
     else:
         binary_mask = np.where(target_preds > confidence_threshold, 1, 0).astype(
             np.uint8
         )
 
-    # Define kernel for morphological operations
     kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (morph_size, morph_size))
 
     # Apply opening to remove thin connections (erode then dilate)
@@ -213,7 +211,7 @@ def clean_building_mask(
     # Final erosion to amplify differences between buildings
     eroded_mask = cv2.erode(opened_mask, kernel, iterations=1)
 
-    # Fill holes in buildings with closing
+    # Fill holes
     filled_mask = cv2.morphologyEx(eroded_mask, cv2.MORPH_CLOSE, kernel)
 
     return filled_mask

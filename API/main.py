@@ -135,8 +135,10 @@ async def predict_api(params: PredictionRequest, request: Request):
             confidence=params.confidence / 100,  # Convert percentage to decimal
             tolerance=params.tolerance,
             area_threshold=params.area_threshold,
-            orthogonalize=params.use_josm_q,
-            vectorization_algorithm=params.vectorization_algorithm,
+            orthogonalize=params.orthogonalize,
+            ortho_skew_tolerance_deg=params.ortho_skew_tolerance_deg,
+            ortho_max_angle_change_deg=params.ortho_max_angle_change_deg,
+            get_predictions_as_points=params.get_predictions_as_points,
         )
 
         # Clean up temporary files

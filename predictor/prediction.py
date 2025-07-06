@@ -123,7 +123,6 @@ def predict_tflite(interpreter, image_paths, prediction_path, confidence):
         target_class = 1
         target_preds = preds[..., target_class]
         for idx, path in enumerate(image_batch):
-
             # Clean the mask
             cleaned_mask = clean_building_mask(
                 target_preds[idx],
@@ -209,7 +208,6 @@ def predict_onnx(model_path, image_paths, prediction_path, confidence=0.25):
         mask_path = f"{prediction_path}/{Path(image_path).stem}.png"
 
         if len(masks) > 0:
-
             combined_mask = masks.max(axis=0)
             cleaned_mask = clean_building_mask(
                 combined_mask,
@@ -250,7 +248,7 @@ def run_prediction(
     model_type = get_model_type(checkpoint_path)
     model = initialize_model(checkpoint_path)
 
-    print(f"It took {round(time.time()-start)} sec to load model")
+    print(f"It took {round(time.time() - start)} sec to load model")
     start = time.time()
 
     os.makedirs(prediction_path, exist_ok=True)
@@ -259,7 +257,6 @@ def run_prediction(
         raise RuntimeError("No images found in the input directory")
 
     if model_type == "tflite":
-
         predict_tflite(model, image_paths, prediction_path, confidence)
 
     elif model_type == "keras":
@@ -274,7 +271,7 @@ def run_prediction(
         raise RuntimeError("Loaded model is not supported")
 
     print(
-        f"It took {round(time.time()-start)} sec to predict with {confidence} Confidence Threshold"
+        f"It took {round(time.time() - start)} sec to predict with {confidence} Confidence Threshold"
     )
 
     if model_type == "keras":
@@ -286,7 +283,7 @@ def run_prediction(
     georeference_prediction_tiles(
         prediction_path, georeference_path, overlap_pixels=3, crs=crs
     )
-    print(f"It took {round(time.time()-start)} sec to georeference")
+    print(f"It took {round(time.time() - start)} sec to georeference")
 
     remove_files(f"{prediction_path}/*.xml")
     remove_files(f"{prediction_path}/*.png")

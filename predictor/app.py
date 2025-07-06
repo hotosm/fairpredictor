@@ -22,9 +22,12 @@ async def predict(
     tolerance=0.5,
     remove_metadata=True,
     orthogonalize=True,
-    vectorization_algorithm="rasterio",
     bbox=None,
     geojson=None,
+    merge_input_images_to_single_image=False,
+    get_predictions_as_points=True,
+    ortho_skew_tolerance_deg: int = 15,  # angle (0,45> degrees
+    ortho_max_angle_change_deg: int = 15,  # angle (0,45> degrees
 ):
     """
     Parameters:
@@ -37,15 +40,12 @@ async def predict(
         confidence: Optional >> Threshold probability for filtering out low-confidence predictions, Defaults to 0.5
         area_threshold (float, optional): Threshold for filtering polygon areas. Defaults to 3 sqm.
         tolerance (float, optional): Tolerance parameter for simplifying polygons. Defaults to 0.5 m. Percentage Tolerance = (Tolerance in Meters / Arc Length in Meters ​)×100
+
     """
     if not bbox and not geojson:
         raise ValueError("Either bbox or geojson must be provided")
     if confidence < 0 or confidence > 1:
         raise ValueError("Confidence must be between 0 and 1")
-    if vectorization_algorithm not in ["potrace", "rasterio"]:
-        raise ValueError(
-            f"Vectorization algorithm {vectorization_algorithm} is not supported"
-        )
     if base_path:
         base_path = os.path.join(base_path, "prediction", str(uuid.uuid4()))
     else:
@@ -66,8 +66,10 @@ async def predict(
         crs="3857",
         # dump=True,
     )
-
-    # merge_rasters(image_download_path, os.path.join(base_path, "merged_image_chips.tif"))
+    if merge_input_images_to_single_image:
+        merge_rasters(
+            image_download_path, os.path.join(base_path, "merged_image_chips.tif")
+        )
 
     prediction_path = os.path.join(base_path, "prediction")
     os.makedirs(prediction_path, exist_ok=True)
@@ -95,8 +97,9 @@ async def predict(
         simplify_tolerance=tolerance,
         min_area=area_threshold,
         orthogonalize=orthogonalize,
-        algorithm=vectorization_algorithm,
         tmp_dir=os.path.join(base_path, "tmp"),
+        ortho_skew_tolerance_deg=ortho_skew_tolerance_deg,
+        ortho_max_angle_change_deg=ortho_max_angle_change_deg,
     )
     gdf = converter.convert(prediction_merged_mask_path, prediction_geojson_path)
 
@@ -112,6 +115,14 @@ async def predict(
     gdf["building"] = "yes"
     gdf["source"] = "fAIr"
 
+    if get_predictions_as_points:
+        gdf_representative_points = gdf.copy()
+        gdf_representative_points.geometry = gdf_representative_points.geometry.apply(
+            lambda geom: geom.representative_point()
+        )
+        gdf_representative_points.to_file(
+            os.path.join(geojson_path, "prediction_points.geojson"), driver="GeoJSON"
+        )
     prediction_geojson_data = json.loads(gdf.to_json())
 
     if remove_metadata:
