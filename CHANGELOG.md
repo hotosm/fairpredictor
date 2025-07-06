@@ -15,6 +15,15 @@
 - **tests**: migrate unit tests from unittest to pytest and clean up test structure
 - **tests**: improve readability of predict function calls in test cases
 
+## v0.3.6 (2025-07-06)
+
+### Fix
+
+- **predict**: update temporary directory handling for mask vectorization
+- **fix-basepath**: basepath sync
+- **fixes-metadata-cleanup**: fixes metadata cleanup problem also introduces an ability to keep all runtime metadata
+- **predict**: update output path handling and directory structure for predictions
+
 ## v0.3.5 (2025-07-06)
 
 ### Fix
