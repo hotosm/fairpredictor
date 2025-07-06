@@ -91,6 +91,13 @@ class PredictionRequest(BaseModel):
         default=False,
         description="Whether to include predictions as points, this will create output geojson with extra points predictions",
     )
+    remove_metadata: Optional[bool] = Field(
+        default=True,
+        description="Whether to remove intermediate metadata files after processing",
+    )
+    output_path: Optional[str] = Field(
+        default=None, description="Path to save the output files"
+    )
 
     @field_validator("checkpoint")
     def validate_checkpoint(cls, value):

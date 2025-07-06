@@ -60,8 +60,8 @@ async def predict(
 
     os.makedirs(base_path, exist_ok=True)
     meta_path, results_path = (
-        os.path.join(output_path, "meta"),
-        os.path.join(output_path, "results"),
+        os.path.join(base_path, "meta"),
+        os.path.join(base_path, "results"),
     )
     os.makedirs(meta_path, exist_ok=True)
     os.makedirs(results_path, exist_ok=True)
