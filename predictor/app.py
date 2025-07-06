@@ -100,19 +100,16 @@ async def predict(
     os.makedirs(os.path.dirname(prediction_merged_mask_path), exist_ok=True)
 
     merge_rasters(prediction_path, prediction_merged_mask_path)
-    tmp_dir = os.path.join(base_path, "tmp")
     gdf = VectorizeMasks(
         simplify_tolerance=tolerance,
         min_area=area_threshold,
         orthogonalize=orthogonalize,
-        tmp_dir=tmp_dir,
+        tmp_dir=os.path.join(base_path, "tmp"),
         ortho_skew_tolerance_deg=ortho_skew_tolerance_deg,
         ortho_max_angle_change_deg=ortho_max_angle_change_deg,
     ).convert(
         prediction_merged_mask_path, os.path.join(geojson_path, "predictions.geojson")
     )
-
-    shutil.rmtree(tmp_dir)
     print(f"It took {round(time.time() - start)} sec to extract polygons")
 
     if gdf.crs and gdf.crs != "EPSG:4326":
