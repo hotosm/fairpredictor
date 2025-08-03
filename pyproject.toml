@@ -1,6 +1,6 @@
 [project]
 name = "fairpredictor"
-version = "0.3.6"
+version = "0.3.7"
 description = "A package for running predictions using fAIr"
 authors = [
     {name = "kshitijrajsharma",email = "skshitizraj@gmail.com"}
