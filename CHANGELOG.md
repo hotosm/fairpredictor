@@ -15,6 +15,12 @@
 - **tests**: migrate unit tests from unittest to pytest and clean up test structure
 - **tests**: improve readability of predict function calls in test cases
 
+## v0.3.8 (2025-08-03)
+
+### Fix
+
+- **bing**: adds support for bign
+
 ## v0.3.7 (2025-08-03)
 
 ### Fix
