@@ -6,7 +6,7 @@ import uuid
 
 from geomltoolkits.downloader import tms as TMSDownloader
 from geomltoolkits.regularizer import VectorizeMasks
-from geomltoolkits.utils import merge_rasters
+from geomltoolkits.utils import merge_rasters, validate_polygon_geometries
 
 from .prediction import run_prediction
 from .utils import download_or_validate_model
@@ -28,6 +28,7 @@ async def predict(
     get_predictions_as_points=True,
     ortho_skew_tolerance_deg=15,
     ortho_max_angle_change_deg=15,
+    make_geoms_valid=True,
 ):
     """Detect buildings using ML model and return as GeoJSON.
 
@@ -136,6 +137,8 @@ async def predict(
         return json.loads(gdf_points.to_json())
 
     prediction_geojson_data = json.loads(gdf.to_json())
+    if make_geoms_valid:
+        prediction_geojson_data = validate_polygon_geometries(prediction_geojson_data, output_path=output_path if output_path else None)
 
     if not output_path:
         shutil.rmtree(base_path)

@@ -98,6 +98,10 @@ class PredictionRequest(BaseModel):
     output_path: Optional[str] = Field(
         default=None, description="Path to save the output files"
     )
+    make_geoms_valid: Optional[bool] = Field(
+        default=True,
+        description="Whether to validate and fix polygon geometries in the output GeoJSON",
+    )
 
     @field_validator("checkpoint")
     def validate_checkpoint(cls, value):

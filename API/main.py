@@ -139,6 +139,7 @@ async def predict_api(params: PredictionRequest, request: Request):
             ortho_skew_tolerance_deg=params.ortho_skew_tolerance_deg,
             ortho_max_angle_change_deg=params.ortho_max_angle_change_deg,
             get_predictions_as_points=params.get_predictions_as_points,
+            make_geoms_valid=params.make_geoms_valid,
         )
 
         # Clean up temporary files
