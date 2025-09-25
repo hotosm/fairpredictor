@@ -15,6 +15,12 @@
 - **tests**: migrate unit tests from unittest to pytest and clean up test structure
 - **tests**: improve readability of predict function calls in test cases
 
+## v0.3.9 (2025-09-25)
+
+### Fix
+
+- **geom**: fixes geom validation issue
+
 ## v0.3.8 (2025-08-03)
 
 ### Fix
