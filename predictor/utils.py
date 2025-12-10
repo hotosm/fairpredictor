@@ -179,7 +179,6 @@ def download_or_validate_model(model_path: str) -> str:
 def clean_building_mask(
     target_preds: np.ndarray,
     confidence_threshold=0.5,
-    morph_size=5,
 ):
     """
     Clean up building masks to remove thin connections and improve precision.
@@ -187,7 +186,6 @@ def clean_building_mask(
     Args:
         target_preds: Raw prediction or binary mask (0-1 range)
         confidence_threshold: Base threshold for building/non-building (ignored if input is already binary)
-        morph_size: Size of morphological operation kernel
     Returns:
         Cleaned binary mask
     """
@@ -198,29 +196,7 @@ def clean_building_mask(
     if is_binary:
         print("Input is already binary, skipping confidence thresholding.")
         binary_mask = target_preds.astype(np.uint8)
-    else:
-        binary_mask = np.where(target_preds > confidence_threshold, 1, 0).astype(
-            np.uint8
-        )
-
-    # kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (morph_size, morph_size))
-
-    # # source for morphological operations : https://docs.opencv.org/4.x/d9/d61/tutorial_py_morphological_ops.html
-
-    # # apply opening to remove thin connections (erode then dilate)
-
-    # opened_mask = cv2.morphologyEx(binary_mask, cv2.MORPH_OPEN, kernel)
-
-    # # apply closing to fill small holes within buildings, dilate then erode
-    # filled_mask = cv2.morphologyEx(opened_mask, cv2.MORPH_CLOSE, kernel)
-
-    # # # erosion to amplify differences between buildings
-    # eroded_mask = cv2.erode(
-    #     filled_mask,
-    #     cv2.getStructuringElement(
-    #         cv2.MORPH_RECT, (min(2, morph_size - 2), min(2, morph_size - 2))
-    #     ),
-    #     iterations=1,
-    # )
+        return binary_mask
+    binary_mask = np.where(target_preds > confidence_threshold, 1, 0).astype(np.uint8)
 
     return binary_mask
