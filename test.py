@@ -14,7 +14,7 @@ asyncio.run(
         tms_url=DEFAULT_OAM_TMS_MOSAIC,
         zoom_level=20,
         orthogonalize=True,
-        remove_metadata=False,
+        debug=False,
         confidence=0.5,
     )
 )

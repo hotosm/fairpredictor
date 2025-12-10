@@ -33,6 +33,11 @@ dev = [
 load-test = [
     "locust>=2.25.0",
 ]
+notebook = [
+    "contextily>=1.6.2",
+    "matplotlib>=3.9.4",
+]
+
 
 [tool.commitizen]
 name = "cz_conventional_commits"

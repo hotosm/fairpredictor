@@ -20,11 +20,10 @@ async def predict(
     confidence=0.5,
     area_threshold=3,
     tolerance=0.5,
-    remove_metadata=True,
     orthogonalize=True,
     bbox=None,
     geojson=None,
-    merge_input_images_to_single_image=False,
+    debug=False,
     get_predictions_as_points=True,
     ortho_skew_tolerance_deg=15,
     ortho_max_angle_change_deg=15,
@@ -40,11 +39,10 @@ async def predict(
         confidence: Threshold for filtering predictions (0-1)
         area_threshold: Minimum polygon area in sqm (default: 3)
         tolerance: Simplification tolerance in meters (default: 0.5)
-        remove_metadata: Whether to delete intermediate files after processing
         orthogonalize: Whether to square building corners
         bbox: Bounding box for prediction area
         geojson: GeoJSON object for prediction area
-        merge_input_images_to_single_image: Whether to merge source images
+        debug: Whether to produce merged input images and keep intermediate files
         get_predictions_as_points: Whether to generate point representations
         ortho_skew_tolerance_deg: Max skew angle for orthogonalization (0-45)
         ortho_max_angle_change_deg: Max corner adjustment angle (0-45)
@@ -79,10 +77,13 @@ async def predict(
         crs="3857",
     )
 
-    if merge_input_images_to_single_image:
-        merge_rasters(
-            image_download_path, os.path.join(meta_path, "merged_image_chips.tif")
-        )
+    if debug:
+        try:
+            merge_rasters(
+                image_download_path, os.path.join(meta_path, "merged_image_chips.tif")
+            )
+        except Exception as e:
+            print(f"Could not merge input images: {e}")
 
     prediction_path = os.path.join(meta_path, "prediction")
     os.makedirs(prediction_path, exist_ok=True)
@@ -121,7 +122,7 @@ async def predict(
 
     gdf["building"], gdf["source"] = "yes", "fAIr"
 
-    if remove_metadata:
+    if not debug:
         shutil.rmtree(meta_path)
 
     if get_predictions_as_points:
@@ -138,7 +139,9 @@ async def predict(
 
     prediction_geojson_data = json.loads(gdf.to_json())
     if make_geoms_valid:
-        prediction_geojson_data = validate_polygon_geometries(prediction_geojson_data, output_path=output_path if output_path else None)
+        prediction_geojson_data = validate_polygon_geometries(
+            prediction_geojson_data, output_path=output_path if output_path else None
+        )
 
     if not output_path:
         shutil.rmtree(base_path)
