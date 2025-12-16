@@ -7,6 +7,7 @@ from typing import List
 
 import cv2
 import numpy as np
+import rasterio
 import requests
 from geomltoolkits.utils import georeference_tile
 from PIL import Image
@@ -204,14 +205,20 @@ def clean_building_mask(
 
 
 def morphological_cleaning(prediction_merged_mask_path):
-    ## opening to remove noise and necks
+    with rasterio.open(prediction_merged_mask_path) as src:
+        img = src.read(1)
+        profile = src.profile.copy()
+    # lets do opening here
     opening = cv2.morphologyEx(
-        cv2.imread(prediction_merged_mask_path, 0),
+        img,
         cv2.MORPH_OPEN,
         cv2.getStructuringElement(cv2.MORPH_RECT, (3, 3)),
         iterations=2,
     )
     ## remove the boundary objects
     clean_img = clear_border(opening)
-    cv2.imwrite(prediction_merged_mask_path, clean_img)
+
+    with rasterio.open(prediction_merged_mask_path, "w", **profile) as dst:
+        dst.write(clean_img, 1)
+
     return prediction_merged_mask_path
