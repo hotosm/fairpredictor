@@ -10,6 +10,7 @@ import numpy as np
 import requests
 from geomltoolkits.utils import georeference_tile
 from PIL import Image
+from skimage.segmentation import clear_border
 
 IMAGE_SIZE = 256
 
@@ -200,3 +201,17 @@ def clean_building_mask(
     binary_mask = np.where(target_preds > confidence_threshold, 1, 0).astype(np.uint8)
 
     return binary_mask
+
+
+def morphological_cleaning(prediction_merged_mask_path):
+    ## opening to remove noise and necks
+    opening = cv2.morphologyEx(
+        cv2.imread(prediction_merged_mask_path, 0),
+        cv2.MORPH_OPEN,
+        cv2.getStructuringElement(cv2.MORPH_RECT, (3, 3)),
+        iterations=2,
+    )
+    ## remove the boundary objects
+    clean_img = clear_border(opening)
+    cv2.imwrite(prediction_merged_mask_path, clean_img)
+    return prediction_merged_mask_path

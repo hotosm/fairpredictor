@@ -15,6 +15,7 @@ dependencies = [
     "opencv-python-headless>=4.10.0.84",
     "pillow>=9.1.0",
     "requests>=2.32.3",
+    "scikit-image>=0.24.0",
     "tqdm>=4.67.0",
 ]
 

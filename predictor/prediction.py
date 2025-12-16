@@ -127,7 +127,6 @@ def predict_tflite(interpreter, image_paths, prediction_path, confidence):
             cleaned_mask = clean_building_mask(
                 target_preds[idx],
                 confidence_threshold=confidence,
-                morph_size=3,
             )
 
             # Expand dimensions for save_mask
@@ -154,7 +153,6 @@ def predict_keras(model, image_paths, prediction_path, confidence):
             cleaned_mask = clean_building_mask(
                 target_preds[idx],
                 confidence_threshold=confidence,
-                morph_size=3,
             )
 
             # Expand dimensions for save_mask

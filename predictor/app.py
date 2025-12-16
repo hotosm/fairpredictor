@@ -9,7 +9,7 @@ from geomltoolkits.regularizer import VectorizeMasks
 from geomltoolkits.utils import merge_rasters, validate_polygon_geometries
 
 from .prediction import run_prediction
-from .utils import download_or_validate_model
+from .utils import download_or_validate_model, morphological_cleaning
 
 
 async def predict(
@@ -103,7 +103,7 @@ async def predict(
 
     merge_rasters(prediction_path, prediction_merged_mask_path)
     prediction_poly_geojson_path = os.path.join(geojson_path, "predictions.geojson")
-
+    morphological_cleaning(prediction_merged_mask_path)
     gdf = VectorizeMasks(
         simplify_tolerance=tolerance,
         min_area=area_threshold,
