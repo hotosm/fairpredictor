@@ -15,6 +15,13 @@
 - **tests**: migrate unit tests from unittest to pytest and clean up test structure
 - **tests**: improve readability of predict function calls in test cases
 
+## v0.3.10 (2025-12-24)
+
+### Fix
+
+- add morphological cleaning function and integrate it into prediction workflow
+- update prediction output path and clean up morphological mask function
+
 ## v0.3.9 (2025-09-25)
 
 ### Fix
