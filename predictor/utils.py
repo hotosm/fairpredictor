@@ -7,9 +7,11 @@ from typing import List
 
 import cv2
 import numpy as np
+import rasterio
 import requests
 from geomltoolkits.utils import georeference_tile
 from PIL import Image
+from skimage.segmentation import clear_border
 
 IMAGE_SIZE = 256
 
@@ -179,7 +181,6 @@ def download_or_validate_model(model_path: str) -> str:
 def clean_building_mask(
     target_preds: np.ndarray,
     confidence_threshold=0.5,
-    morph_size=3,
 ):
     """
     Clean up building masks to remove thin connections and improve precision.
@@ -187,7 +188,6 @@ def clean_building_mask(
     Args:
         target_preds: Raw prediction or binary mask (0-1 range)
         confidence_threshold: Base threshold for building/non-building (ignored if input is already binary)
-        morph_size: Size of morphological operation kernel
     Returns:
         Cleaned binary mask
     """
@@ -198,20 +198,27 @@ def clean_building_mask(
     if is_binary:
         print("Input is already binary, skipping confidence thresholding.")
         binary_mask = target_preds.astype(np.uint8)
-    else:
-        binary_mask = np.where(target_preds > confidence_threshold, 1, 0).astype(
-            np.uint8
-        )
+        return binary_mask
+    binary_mask = np.where(target_preds > confidence_threshold, 1, 0).astype(np.uint8)
 
-    kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (morph_size, morph_size))
+    return binary_mask
 
-    # Apply opening to remove thin connections (erode then dilate)
-    opened_mask = cv2.morphologyEx(binary_mask, cv2.MORPH_OPEN, kernel)
 
-    # Final erosion to amplify differences between buildings
-    eroded_mask = cv2.erode(opened_mask, kernel, iterations=1)
+def morphological_cleaning(prediction_merged_mask_path):
+    with rasterio.open(prediction_merged_mask_path) as src:
+        img = src.read(1)
+        profile = src.profile.copy()
+    # lets do opening here
+    opening = cv2.morphologyEx(
+        img,
+        cv2.MORPH_OPEN,
+        cv2.getStructuringElement(cv2.MORPH_RECT, (3, 3)),
+        iterations=2,
+    )
+    ## remove the boundary objects
+    clean_img = clear_border(opening)
 
-    # Fill holes
-    filled_mask = cv2.morphologyEx(eroded_mask, cv2.MORPH_CLOSE, kernel)
+    with rasterio.open(prediction_merged_mask_path, "w", **profile) as dst:
+        dst.write(clean_img, 1)
 
-    return filled_mask
+    return prediction_merged_mask_path
