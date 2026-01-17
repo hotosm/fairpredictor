@@ -15,6 +15,12 @@
 - **tests**: migrate unit tests from unittest to pytest and clean up test structure
 - **tests**: improve readability of predict function calls in test cases
 
+## v0.3.11 (2026-01-17)
+
+### Fix
+
+- **lock**: scikit image
+
 ## v0.3.10 (2025-12-24)
 
 ### Fix
