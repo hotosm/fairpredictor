@@ -21,7 +21,9 @@ ENV C_INCLUDE_PATH=/usr/include/gdal
 
 WORKDIR /app
 
-COPY pyproject.toml README.md uv.lock* ./
+COPY pyproject.toml README.md  ./
+
+RUN uv lock 
 
 RUN --mount=type=cache,target=/root/.cache/uv \
     uv sync --frozen --no-install-project --no-dev --no-group load-test --group api

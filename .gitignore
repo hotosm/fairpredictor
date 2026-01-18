@@ -37,3 +37,4 @@ venv
 
 #predictions
 prediction/*
+uv.lock
