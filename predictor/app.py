@@ -136,12 +136,16 @@ async def predict(
         if not output_path:
             shutil.rmtree(base_path)
         return json.loads(gdf_points.to_json())
-
     prediction_geojson_data = json.loads(gdf.to_json())
     if make_geoms_valid:
         prediction_geojson_data = validate_polygon_geometries(
             prediction_geojson_data, output_path=prediction_poly_geojson_path
         )
+    if type(prediction_geojson_data) == str:
+        if os.path.exists(prediction_geojson_data):
+            with open(prediction_geojson_data, "r",encoding='utf-8') as f:
+                prediction_geojson_data = f.read()
+                prediction_geojson_data = json.loads(prediction_geojson_data)
 
     if not output_path:
         shutil.rmtree(base_path)

@@ -136,7 +136,7 @@ async def health_check(request: Request):
 @limiter.limit(os.getenv("PREDICT_RATE_LIMIT", "5/minute"))
 async def predict_api(params: PredictionRequest, request: Request):
     try:
-        predictions = await predict(
+        predictions_result = await predict(
             bbox=params.bbox,
             model_path=params.checkpoint,
             zoom_level=params.zoom_level,
@@ -158,7 +158,7 @@ async def predict_api(params: PredictionRequest, request: Request):
             except Exception as cleanup_error:
                 logger.warning(f"Failed to cleanup temp file: {cleanup_error}")
 
-        return predictions
+        return predictions_result
     except RuntimeError as e:
         error_message = str(e)
         logger.warning(f"Runtime error during prediction: {error_message}")
