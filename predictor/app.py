@@ -125,17 +125,7 @@ async def predict(
     if not debug:
         shutil.rmtree(meta_path)
 
-    if get_predictions_as_points:
-        gdf_points = gdf.copy()
-        gdf_points.geometry = gdf_points.geometry.apply(
-            lambda geom: geom.representative_point()
-        )
-        gdf_points.to_file(
-            os.path.join(geojson_path, "predictions_points.geojson"), driver="GeoJSON"
-        )
-        if not output_path:
-            shutil.rmtree(base_path)
-        return json.loads(gdf_points.to_json())
+
     prediction_geojson_data = json.loads(gdf.to_json())
     if make_geoms_valid:
         prediction_geojson_data = validate_polygon_geometries(
@@ -149,5 +139,17 @@ async def predict(
 
     if not output_path:
         shutil.rmtree(base_path)
+
+    if get_predictions_as_points:
+        gdf_points = gdf.copy()
+        gdf_points.geometry = gdf_points.geometry.apply(
+            lambda geom: geom.representative_point()
+        )
+        gdf_points.to_file(
+            os.path.join(geojson_path, "predictions_points.geojson"), driver="GeoJSON"
+        )
+        if not output_path:
+            shutil.rmtree(base_path)
+        return json.loads(gdf_points.to_json())
 
     return prediction_geojson_data
