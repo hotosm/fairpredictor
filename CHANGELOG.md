@@ -15,6 +15,12 @@
 - **tests**: migrate unit tests from unittest to pytest and clean up test structure
 - **tests**: improve readability of predict function calls in test cases
 
+## v0.3.15 (2026-01-20)
+
+### Fix
+
+- **validate**: fixes bug on null features validation
+
 ## v0.3.14 (2026-01-20)
 
 ### Fix
