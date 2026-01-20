@@ -137,9 +137,6 @@ async def predict(
                 prediction_geojson_data = f.read()
                 prediction_geojson_data = json.loads(prediction_geojson_data)
 
-    if not output_path:
-        shutil.rmtree(base_path)
-
     if get_predictions_as_points:
         gdf_points = gdf.copy()
         gdf_points.geometry = gdf_points.geometry.apply(
@@ -151,5 +148,8 @@ async def predict(
         if not output_path:
             shutil.rmtree(base_path)
         return json.loads(gdf_points.to_json())
+
+    if not output_path:
+        shutil.rmtree(base_path)
 
     return prediction_geojson_data
