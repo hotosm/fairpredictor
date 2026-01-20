@@ -15,6 +15,12 @@
 - **tests**: migrate unit tests from unittest to pytest and clean up test structure
 - **tests**: improve readability of predict function calls in test cases
 
+## v0.3.13 (2026-01-20)
+
+### Fix
+
+- **point**: fixes point predictions
+
 ## v0.3.12 (2026-01-18)
 
 ### Fix
