@@ -127,7 +127,8 @@ async def predict(
 
 
     prediction_geojson_data = json.loads(gdf.to_json())
-    if make_geoms_valid:
+    if make_geoms_valid and len(gdf) > 0:
+        
         prediction_geojson_data = validate_polygon_geometries(
             prediction_geojson_data, output_path=prediction_poly_geojson_path
         )
