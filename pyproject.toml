@@ -69,22 +69,13 @@ major_version_zero = true
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 
-[tool.hatch.build.targets.wheel]
-only-include = ["predictor"]
-packages = ["predictor"]
-
-[tool.hatch.build.targets.sdist]
-include = [
-    "predictor/*.py",
-    "predictor/yoloseg/*.py",
-]
-exclude = [
-    "/tests",
-]
+[tool.uv.build-backend]
+module-name = "predictor"
+module-root = ""
 
 [tool.uv.sources]
 geomltoolkits = { path = "../geoml-toolkits", editable = true }
 
 [build-system]
-requires = ["uv-build>=0.6.6"]
+requires = ["uv-build>=0.9.28,<0.10"]
 build-backend = "uv_build"
