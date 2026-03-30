@@ -15,6 +15,16 @@
 - **tests**: migrate unit tests from unittest to pytest and clean up test structure
 - **tests**: improve readability of predict function calls in test cases
 
+## v0.5.0 (2026-03-30)
+
+### Fix
+
+- **build**: uv build
+
+### Refactor
+
+- **geomltoolkits**: adds geomltookits integration
+
 ## v0.3.15 (2026-01-20)
 
 ### Fix
