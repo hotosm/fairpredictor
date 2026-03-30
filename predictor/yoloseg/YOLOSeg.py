@@ -34,8 +34,8 @@ class YOLOSeg:
         input_tensor = self._prepare_input(image)
         outputs = self.session.run(self.output_names, {self.input_names[0]: input_tensor})
 
-        self.boxes, self.scores, self.class_ids, mask_pred = self._process_box_output(outputs[0])  # type: ignore[arg-type]
-        self.mask_maps = self._process_mask_output(mask_pred, outputs[1])  # type: ignore[arg-type]
+        self.boxes, self.scores, self.class_ids, mask_pred = self._process_box_output(outputs[0])  # ty: ignore[invalid-argument-type]
+        self.mask_maps = self._process_mask_output(mask_pred, outputs[1])  # ty: ignore[invalid-argument-type]
 
         return self.boxes, self.scores, self.class_ids, self.mask_maps
 

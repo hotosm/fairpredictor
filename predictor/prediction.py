@@ -86,7 +86,7 @@ class _SavedModelWrapper:
             result = self._layer([tensor])
         if isinstance(result, dict):
             result = next(iter(result.values()))
-        return result.numpy()
+        return result.numpy()  # ty: ignore[unresolved-attribute]
 
 
 def _load_keras_model(keras, path: str):

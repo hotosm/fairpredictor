@@ -1,4 +1,5 @@
 import asyncio
+import importlib.util
 import os
 
 import pytest
@@ -8,6 +9,15 @@ from predictor import predict
 TMS_URL = "https://tiles.openaerialmap.org/6501a65c0906de000167e64d/0/6501a65c0906de000167e64e/{z}/{x}/{y}"
 BBOX = [100.56228021333352, 13.685230854641182, 100.56383321235313, 13.685961853747969]
 ZOOM_LEVEL = 20
+
+requires_tensorflow = pytest.mark.skipif(
+    importlib.util.find_spec("tensorflow") is None,
+    reason="tensorflow not installed",
+)
+requires_pytorch = pytest.mark.skipif(
+    importlib.util.find_spec("torch") is None,
+    reason="torch not installed",
+)
 
 
 @pytest.fixture
@@ -23,8 +33,7 @@ def model_paths():
 
 @pytest.fixture
 def tf_model_path(model_paths):
-    """Convert h5 checkpoint to SavedModel (.tf) format for testing."""
-    from tensorflow import keras  # ty: ignore[unresolved-import]
+    keras = pytest.importorskip("tensorflow").keras
 
     tf_dir = os.path.join(os.path.dirname(model_paths["h5"]), "checkpoint_savedmodel")
     if os.path.isdir(tf_dir):
@@ -76,16 +85,19 @@ def test_predict_onnx(model_paths):
     _assert_valid_geojson(result)
 
 
+@requires_tensorflow
 def test_predict_h5(model_paths):
     result = _run_predict(model_paths["h5"])
     _assert_valid_geojson(result)
 
 
+@requires_pytorch
 def test_predict_pt(model_paths):
     result = _run_predict(model_paths["pt"])
     _assert_valid_geojson(result)
 
 
+@requires_tensorflow
 def test_predict_tf(tf_model_path):
     result = _run_predict(tf_model_path)
     _assert_valid_geojson(result)
