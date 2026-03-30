@@ -35,6 +35,7 @@ pipenv.lock
 env
 venv
 
-#predictions
+predictions
 prediction/*
 uv.lock
+tests/checkpoints

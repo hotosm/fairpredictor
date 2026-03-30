@@ -1,1 +1,1 @@
-from .YOLOSeg import YOLOSeg
+from .YOLOSeg import YOLOSeg as YOLOSeg

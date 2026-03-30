@@ -7,20 +7,56 @@ on:
     branches: [master]
 
 jobs:
-  publish:
+  lint:
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        python-version: ["3.8", "3.10", "3.12", "3.13"]
-      fail-fast: false
-    permissions:
-      id-token: write
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
       - name: Install uv
-        uses: astral-sh/setup-uv@v5
+        uses: astral-sh/setup-uv@v7
+        with:
+          enable-cache: true
+          cache-dependency-glob: "uv.lock"
+
+      - name: Set up Python
+        run: uv python install 3.12
+
+      - name: Lint
+        run: |
+          uv run ruff check predictor/ tests/ API/
+          uv run ruff format --check predictor/ tests/ API/
+
+  typecheck:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
+        with:
+          enable-cache: true
+          cache-dependency-glob: "uv.lock"
+
+      - name: Set up Python
+        run: uv python install 3.12
+
+      - name: Type check
+        run: uv run ty check predictor/
+
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.10", "3.11", "3.12", "3.13"]
+      fail-fast: false
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
         with:
           enable-cache: true
           cache-dependency-glob: "uv.lock"

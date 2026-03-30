@@ -1,16 +1,11 @@
-import os
-import tempfile
-from typing import List, Optional
+from typing import Literal
 
-import requests
 from pydantic import BaseModel, ConfigDict, Field, field_validator
+
+from .utils import download_or_validate_model
 
 
 class PredictionRequest(BaseModel):
-    """
-    Prediction Request Model for Geospatial Machine Learning
-    """
-
     model_config = ConfigDict(
         json_schema_extra={
             "example": {
@@ -24,11 +19,11 @@ class PredictionRequest(BaseModel):
         }
     )
 
-    bbox: List[float] = Field(
+    bbox: list[float] = Field(
         ...,
         description="Geographical bounding box coordinates [min_lon, min_lat, max_lon, max_lat]",
-        min_items=4,
-        max_items=4,
+        min_length=4,
+        max_length=4,
     )
 
     checkpoint: str = Field(
@@ -48,73 +43,67 @@ class PredictionRequest(BaseModel):
         description="Tile map service (TMS) URL template",
     )
 
-    orthogonalize: Optional[bool] = Field(
+    task: Literal["segmentation", "detection", "classification"] = Field(
+        default="segmentation",
+        description="Prediction task type",
+    )
+
+    orthogonalize: bool = Field(
         default=True,
         description="Apply orthogonalization to detected features",
     )
 
-    ortho_skew_tolerance_deg: Optional[int] = Field(
+    ortho_skew_tolerance_deg: int = Field(
         default=15,
         description="Skew tolerance for orthogonalization (0-45 degrees)",
         ge=0,
         le=45,
     )
 
-    ortho_max_angle_change_deg: Optional[int] = Field(
+    ortho_max_angle_change_deg: int = Field(
         default=15,
         description="Maximum angle change for orthogonalization (0-45 degrees)",
         ge=0,
         le=45,
     )
 
-    confidence: Optional[int] = Field(
+    confidence: int = Field(
         default=50,
         description="Confidence threshold % (0-100)",
         ge=0,
         le=100,
     )
 
-    tolerance: Optional[float] = Field(
+    tolerance: float = Field(
         default=0.5,
         description="Polygon simplification tolerance",
         ge=0,
         le=10,
     )
 
-    area_threshold: Optional[float] = Field(
+    area_threshold: float = Field(
         default=2,
         description="Minimum polygon area threshold",
         ge=0,
         le=20,
     )
-    get_predictions_as_points: Optional[bool] = Field(
+
+    get_predictions_as_points: bool = Field(
         default=False,
-        description="Whether to include predictions as points, this will create output geojson with extra points predictions",
+        description="Whether to include predictions as points",
     )
-    output_path: Optional[str] = Field(
-        default=None, description="Path to save the output files"
+
+    output_path: str | None = Field(
+        default=None,
+        description="Path to save the output files",
     )
-    make_geoms_valid: Optional[bool] = Field(
+
+    make_geoms_valid: bool = Field(
         default=True,
         description="Whether to validate and fix polygon geometries in the output GeoJSON",
     )
 
     @field_validator("checkpoint")
-    def validate_checkpoint(cls, value):
-        if value.startswith("http"):
-            try:
-                response = requests.get(value)
-                response.raise_for_status()
-
-                file_ext = os.path.splitext(value)[-1] or ".tflite"
-                _, temp_file_path = tempfile.mkstemp(suffix=file_ext)
-
-                with open(temp_file_path, "wb") as f:
-                    f.write(response.content)
-
-                return temp_file_path
-            except requests.exceptions.RequestException as e:
-                raise ValueError(f"Failed to download model checkpoint: {e}")
-        elif not os.path.exists(value):
-            raise ValueError("Model checkpoint file not found")
-        return value
+    @classmethod
+    def validate_checkpoint(cls, value: str) -> str:
+        return download_or_validate_model(value)

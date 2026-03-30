@@ -1,23 +1,27 @@
 [project]
 name = "fairpredictor"
-version = "0.3.15"
+version = "0.4.0"
 description = "A package for running predictions using fAIr"
 authors = [
-    {name = "kshitijrajsharma",email = "skshitizraj@gmail.com"}
+    {name = "kshitijrajsharma", email = "skshitizraj@gmail.com"}
 ]
 license = {text = "MIT"}
 readme = "README.md"
-requires-python = ">=3.9,<4.0"
+requires-python = ">=3.10"
 dependencies = [
     "ai-edge-litert>=1.2.0",
-    "geomltoolkits>=0.4.2",
+    "geomltoolkits>=2.0.0",
     "onnxruntime>=1.20.1",
-    "opencv-python-headless>=4.10.0.84",
+    "opencv-python-headless>=4.10",
     "pillow>=9.1.0",
-    "requests>=2.32.3",
-    "scikit-image>=0.24.0",
-    "tqdm>=4.67.0",
+    "pydantic>=2.0",
+    "requests>=2.32",
 ]
+
+[project.optional-dependencies]
+tensorflow = ["tensorflow>=2.15"]
+pytorch = ["ultralytics>=8.0", "torch"]
+all = ["fairpredictor[tensorflow,pytorch]"]
 
 [dependency-groups]
 api = [
@@ -27,9 +31,10 @@ api = [
     "uvicorn>=0.33.0",
 ]
 dev = [
-    "black>=24.8.0",
     "commitizen>=3.31.0",
+    "pre-commit>=4.0",
     "pytest>=8.3.5",
+    "ruff>=0.15",
 ]
 load-test = [
     "locust>=2.25.0",
@@ -39,6 +44,19 @@ notebook = [
     "matplotlib>=3.9.4",
 ]
 
+[tool.ruff]
+line-length = 120
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "W", "UP", "B", "SIM", "RUF"]
+
+[tool.ty.rules]
+unused-ignore-comment = "ignore"
+unused-type-ignore-comment = "ignore"
+
+[tool.ty.environment]
+python-version = "3.10"
 
 [tool.commitizen]
 name = "cz_conventional_commits"
@@ -48,21 +66,25 @@ version_scheme = "semver"
 update_changelog_on_bump = true
 major_version_zero = true
 
+[tool.pytest.ini_options]
+testpaths = ["tests"]
 
 [tool.hatch.build.targets.wheel]
 only-include = ["predictor"]
-ackages = ["predictor"]
-
-[build-system]
-requires = ["hatchling"]
-build-backend = "hatchling.build"
+packages = ["predictor"]
 
 [tool.hatch.build.targets.sdist]
 include = [
-  "predictor/*.py",
-  "predictor/yoloseg/*.py",
-
+    "predictor/*.py",
+    "predictor/yoloseg/*.py",
 ]
 exclude = [
-  "/tests",
+    "/tests",
 ]
+
+[tool.uv.sources]
+geomltoolkits = { path = "../geoml-toolkits", editable = true }
+
+[build-system]
+requires = ["uv-build>=0.6.6"]
+build-backend = "uv_build"

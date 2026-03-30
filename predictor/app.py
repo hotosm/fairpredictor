@@ -1,67 +1,98 @@
 import json
+import logging
 import os
 import shutil
 import time
 import uuid
+from typing import Literal
 
+import numpy as np
+import rasterio
+import rasterio.features
+from geomltoolkits import merge_rasters, morphological_cleaning, validate_polygon_geometries, vectorize_mask
 from geomltoolkits.downloader import tms as TMSDownloader
-from geomltoolkits.regularizer import VectorizeMasks
-from geomltoolkits.utils import merge_rasters, validate_polygon_geometries
+from shapely.geometry import mapping
 
 from .prediction import run_prediction
-from .utils import download_or_validate_model, morphological_cleaning
+from .utils import download_or_validate_model, threshold_mask
+
+logger = logging.getLogger(__name__)
+
+
+def _compute_polygon_confidence(
+    gdf,
+    raw_raster_path: str,
+) -> list[float]:
+    """Compute mean confidence per polygon from the raw prediction raster."""
+    with rasterio.open(raw_raster_path) as src:
+        raw_data = src.read(1).astype(np.float32) / 255.0
+        transform = src.transform
+        raster_crs = src.crs
+
+    gdf_projected = gdf.to_crs(raster_crs) if gdf.crs and str(gdf.crs) != str(raster_crs) else gdf
+
+    confidences = []
+    for geom in gdf_projected.geometry:
+        mask = rasterio.features.geometry_mask(
+            [mapping(geom)],
+            out_shape=raw_data.shape,
+            transform=transform,
+            invert=True,
+        )
+        pixels = raw_data[mask]
+        if len(pixels) > 0:
+            confidences.append(round(float(np.mean(pixels)), 4))
+        else:
+            confidences.append(0.0)
+
+    return confidences
+
+
+def _threshold_raster(input_path: str, output_path: str, confidence: float) -> None:
+    """Read a raw confidence raster, threshold to binary, and write to output."""
+    with rasterio.open(input_path) as src:
+        raw = src.read(1)
+        profile = src.profile.copy()
+
+    threshold_value = int(confidence * 255)
+    binary = threshold_mask(raw, threshold=threshold_value)
+
+    with rasterio.open(output_path, "w", **profile) as dst:
+        dst.write(binary, 1)
 
 
 async def predict(
-    model_path,
-    zoom_level,
-    tms_url='"https://apps.kontur.io/raster-tiler/oam/mosaic/{z}/{x}/{y}.png"',
-    output_path=None,
-    confidence=0.5,
-    area_threshold=3,
-    tolerance=0.5,
-    orthogonalize=True,
-    bbox=None,
-    geojson=None,
-    debug=False,
-    get_predictions_as_points=True,
-    ortho_skew_tolerance_deg=15,
-    ortho_max_angle_change_deg=15,
-    make_geoms_valid=True,
-):
-    """Detect buildings using ML model and return as GeoJSON.
+    model_path: str,
+    zoom_level: int,
+    tms_url: str = "https://apps.kontur.io/raster-tiler/oam/mosaic/{z}/{x}/{y}.png",
+    output_path: str | None = None,
+    confidence: float = 0.5,
+    area_threshold: float = 3,
+    tolerance: float = 0.5,
+    orthogonalize: bool = True,
+    bbox: list[float] | None = None,
+    geojson: dict | str | None = None,
+    debug: bool = False,
+    get_predictions_as_points: bool = True,
+    ortho_skew_tolerance_deg: int = 15,
+    ortho_max_angle_change_deg: int = 15,
+    make_geoms_valid: bool = True,
+    task: Literal["segmentation", "detection", "classification"] = "segmentation",
+) -> dict:
+    if task != "segmentation":
+        raise NotImplementedError(f"Task '{task}' is not yet supported. Only 'segmentation' is available.")
 
-    Parameters:
-        model_path: Path of downloaded model checkpoint
-        zoom_level: Zoom level for prediction tiles
-        tms_url: Image URL for feature detection
-        output_path: Directory to save prediction results (temporary UUID dir if None)
-        confidence: Threshold for filtering predictions (0-1)
-        area_threshold: Minimum polygon area in sqm (default: 3)
-        tolerance: Simplification tolerance in meters (default: 0.5)
-        orthogonalize: Whether to square building corners
-        bbox: Bounding box for prediction area
-        geojson: GeoJSON object for prediction area
-        debug: Whether to produce merged input images and keep intermediate files
-        get_predictions_as_points: Whether to generate point representations
-        ortho_skew_tolerance_deg: Max skew angle for orthogonalization (0-45)
-        ortho_max_angle_change_deg: Max corner adjustment angle (0-45)
-    """
     if not bbox and not geojson:
         raise ValueError("Either bbox or geojson must be provided")
     if confidence < 0 or confidence > 1:
         raise ValueError("Confidence must be between 0 and 1")
 
-    base_path = output_path or os.path.join(
-        os.getcwd(), "predictions", str(uuid.uuid4())
-    )
+    base_path = output_path or os.path.join(os.getcwd(), "predictions", str(uuid.uuid4()))
     model_path = download_or_validate_model(model_path)
 
     os.makedirs(base_path, exist_ok=True)
-    meta_path, results_path = (
-        os.path.join(base_path, "meta"),
-        os.path.join(base_path, "results"),
-    )
+    meta_path = os.path.join(base_path, "meta")
+    results_path = os.path.join(base_path, "results")
     os.makedirs(meta_path, exist_ok=True)
     os.makedirs(results_path, exist_ok=True)
 
@@ -79,11 +110,9 @@ async def predict(
 
     if debug:
         try:
-            merge_rasters(
-                image_download_path, os.path.join(meta_path, "merged_image_chips.tif")
-            )
+            merge_rasters(image_download_path, os.path.join(meta_path, "merged_image_chips.tif"))
         except Exception as e:
-            print(f"Could not merge input images: {e}")
+            logger.warning("Could not merge input images: %s", e)
 
     prediction_path = os.path.join(meta_path, "prediction")
     os.makedirs(prediction_path, exist_ok=True)
@@ -98,21 +127,29 @@ async def predict(
     start = time.time()
     geojson_path = os.path.join(results_path, "geojson")
     os.makedirs(geojson_path, exist_ok=True)
-    prediction_merged_mask_path = os.path.join(meta_path, "merged_prediction_mask.tif")
-    os.makedirs(os.path.dirname(prediction_merged_mask_path), exist_ok=True)
 
-    merge_rasters(prediction_path, prediction_merged_mask_path)
+    raw_merged_path = os.path.join(meta_path, "merged_raw_confidence.tif")
+    binary_merged_path = os.path.join(meta_path, "merged_prediction_mask.tif")
+
+    merge_rasters(prediction_path, raw_merged_path)
+    _threshold_raster(raw_merged_path, binary_merged_path, confidence)
+    morphological_cleaning(binary_merged_path)
+
     prediction_poly_geojson_path = os.path.join(geojson_path, "predictions.geojson")
-    morphological_cleaning(prediction_merged_mask_path)
-    gdf = VectorizeMasks(
+    gdf = vectorize_mask(
+        input_tiff=binary_merged_path,
+        output_geojson=prediction_poly_geojson_path,
         simplify_tolerance=tolerance,
         min_area=area_threshold,
         orthogonalize=orthogonalize,
-        tmp_dir=os.path.join(base_path, "tmp"),
         ortho_skew_tolerance_deg=ortho_skew_tolerance_deg,
         ortho_max_angle_change_deg=ortho_max_angle_change_deg,
-    ).convert(prediction_merged_mask_path, prediction_poly_geojson_path)
-    print(f"It took {round(time.time() - start)} sec to extract polygons")
+    )
+
+    if len(gdf) > 0:
+        gdf["confidence"] = _compute_polygon_confidence(gdf, raw_merged_path)
+
+    logger.info("Polygon extraction took %d sec", round(time.time() - start))
 
     if gdf.crs and gdf.crs != "EPSG:4326":
         gdf = gdf.to_crs("EPSG:4326")
@@ -125,26 +162,21 @@ async def predict(
     if not debug:
         shutil.rmtree(meta_path)
 
-
     prediction_geojson_data = json.loads(gdf.to_json())
     if make_geoms_valid and len(gdf) > 0:
-        
         prediction_geojson_data = validate_polygon_geometries(
             prediction_geojson_data, output_path=prediction_poly_geojson_path
         )
-    if type(prediction_geojson_data) == str:
-        if os.path.exists(prediction_geojson_data):
-            with open(prediction_geojson_data, "r",encoding='utf-8') as f:
-                prediction_geojson_data = f.read()
-                prediction_geojson_data = json.loads(prediction_geojson_data)
+    if isinstance(prediction_geojson_data, str) and os.path.exists(prediction_geojson_data):
+        with open(prediction_geojson_data, encoding="utf-8") as f:
+            prediction_geojson_data = json.loads(f.read())
 
     if get_predictions_as_points:
         gdf_points = gdf.copy()
-        gdf_points.geometry = gdf_points.geometry.apply(
-            lambda geom: geom.representative_point()
-        )
+        gdf_points.geometry = gdf_points.geometry.apply(lambda geom: geom.representative_point())
         gdf_points.to_file(
-            os.path.join(geojson_path, "predictions_points.geojson"), driver="GeoJSON"
+            os.path.join(geojson_path, "predictions_points.geojson"),
+            driver="GeoJSON",
         )
         if not output_path:
             shutil.rmtree(base_path)
