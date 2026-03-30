@@ -73,9 +73,6 @@ testpaths = ["tests"]
 module-name = "predictor"
 module-root = ""
 
-[tool.uv.sources]
-geomltoolkits = { path = "../geoml-toolkits", editable = true }
-
 [build-system]
 requires = ["uv-build>=0.9.28,<0.10"]
 build-backend = "uv_build"
